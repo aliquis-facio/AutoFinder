@@ -68,44 +68,54 @@ class Crawling:
         self.word = word
 
     def get_word(self, searched_word_elem):
-        WebDriverWait(self.driver, self.wait_time).until(
+        my_ignored_exceptions = (StaleElementReferenceException)
+        WebDriverWait(self.driver, self.wait_time, ignored_exceptions=my_ignored_exceptions).until(
             EC.element_to_be_clickable(searched_word_elem)).click()
         sleep(2)
         self.driver.back()
 
     def test(self):
-        try:
-            search_box = WebDriverWait(self.driver, self.wait_time).until(
-                EC.presence_of_element_located((By.NAME, "query")))
-            search_box.clear()
-            search_box.send_keys(self.word)
-            search_box.send_keys(Keys.RETURN)
+        # enter the word in search box
+        search_box = WebDriverWait(self.driver, self.wait_time).until(
+            EC.presence_of_element_located((By.NAME, "query")))
+        search_box.clear()
+        search_box.send_keys(self.word)
+        search_box.send_keys(Keys.RETURN)
 
+        isPolsemy = True
+        i = 0
+        while(isPolsemy):
+            # find words in a result page after searching
             search_page_entry = WebDriverWait(self.driver, self.wait_time).until(
                 EC.presence_of_element_located((By.ID, "searchPage_entry")))
             searched_word_elems = search_page_entry.find_elements(
                 By.CLASS_NAME, "row")
-            for elem in searched_word_elems:
-                curr_elem_text = elem.text[:elem.text.find(
-                    '\n')]
-                print(curr_elem_text)
-                temp = elem.find_elements(
-                    By.TAG_NAME, "sup")
 
-                if type(temp) == list:
-                    len_temp = len(temp)
-                    print(f"len: {len_temp}")
-                    if len_temp != 0:
-                        for tmp in temp:
-                            print(tmp.text)
+            if (len(searched_word_elems) > i):
+                curr_elem_text = searched_word_elems[i].text[:searched_word_elems[i].text.find(
+                    '\n')]
+
+                for j in range(len(self.word)):
+                    if self.word[j] != curr_elem_text[j]:
+                        break
                 else:
-                    print(f"temp: {temp}")
-                # print(f"temp type: {type(temp)}")
-                # for t in temp:
-                #     print(f"t type{type(t)}")
-                #     print(f"t.text: {t.text}")
-        except Exception as e:
-            print(type(e))
+                    sup_num = searched_word_elems[i].find_elements(
+                        By.TAG_NAME, "sup")
+
+                    isPolsemy = True if (len(sup_num) > 0) and (
+                        sup_num[0].text.strip() != "") else False
+
+                    curr_xpath = "//*[@id= \"searchPage_entry\"]/div/div[" + \
+                        str(i + 1) + "]/div[1]/a"
+                    print(f"xpath: {curr_xpath}")
+                    curr_elem = WebDriverWait(self.driver, self.wait_time).until(
+                        EC.presence_of_element_located((By.XPATH, curr_xpath)))
+                    if curr_elem:
+                        print(f"if current element exist: {curr_elem}")
+                        self.get_word(curr_elem)
+                i += 1
+            else:
+                break
 
     def search_word(self):
         try:
@@ -124,22 +134,40 @@ class Crawling:
 
             # check the finding word is a polsemy(word with multiple meanings) or containing a sub-entry
             # if sup class "num" is existed: polsemy(word with multiple meanings)
+            isPolsemy = None
             for i, searched_word_elem in enumerate(searched_word_elems):
                 curr_elem_text = searched_word_elem.text[:searched_word_elem.text.find(
                     '\n')]
-                print(curr_elem_text)
+                print(f"current element's text: {curr_elem_text}")
+
                 for j in range(len(self.word)):
                     if self.word[j] != curr_elem_text[j]:
                         break
-                else:  # manage polsemy
-                    curr_xpath = "//*[@id= \"searchPage_entry\"]/div/div[" + \
-                        str(i + 1) + "]/div[1]/a"
-                    print(curr_xpath)
+                else:  # curr elem(word) is same start spelled with searched word(sub entry is not cared)
+                    sup_num = searched_word_elem.find_elements(
+                        By.TAG_NAME, "sup")
+
+                    if (len(sup_num) > 0) and (sup_num[0].text.strip() != ""):
+                        # curr elem(word) is polsemy(word with multiple meanings)
+                        isPolsemy = True
+                        curr_xpath = "//*[@id= \"searchPage_entry\"]/div/div[" + \
+                            str(i + 1) + "]/div[1]/a"
+                        print(f"sup num: {sup_num[0].text.strip()}")
+                        print(f"xpath: {curr_xpath}")
+                    else:
+                        isPolsemy = False
+                        curr_xpath = "//*[@id= \"searchPage_entry\"]/div/div[1]/div[1]/a"
+                        print(f"xpath: {curr_xpath}")
+
                     curr_elem = WebDriverWait(self.driver, self.wait_time).until(
                         EC.presence_of_element_located((By.XPATH, curr_xpath)))
+
                     if curr_elem:
-                        print(curr_elem)
-                    #     self.get_word(curr_elem)
+                        print(f"if current element exist: {curr_elem}")
+                        self.get_word(curr_elem)
+
+                    if not isPolsemy:
+                        break
 
             pronounce = ""
             meaning = ""
@@ -166,12 +194,11 @@ if __name__ == "__main__":
 
     input_word = "row"
     ChromeDriver.set_word(input_word)
-    ChromeDriver.test()
     # word_lst = ChromeDriver.search_word()
-
-    input_word = "center"
-    ChromeDriver.set_word(input_word)
     ChromeDriver.test()
+
+    # input_word = "center"
+    # ChromeDriver.set_word(input_word)
     # word_lst = ChromeDriver.search_word()
     # print(word_lst)
 
