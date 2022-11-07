@@ -49,7 +49,7 @@ class Crawling:
             self.driver_options = Options()
             self.driver_options.add_experimental_option(
                 "excludeSwitches", ["enable-logging"])
-            self.driver_options.add_argument("headless")
+            # self.driver_options.add_argument("headless")
             self.wait_time = 5  # sec
 
             # initialize the lastest driver
@@ -71,14 +71,17 @@ class Crawling:
         WebDriverWait(self.driver, self.wait_time).until(
             EC.element_to_be_clickable(searched_word_elem)).click()
 
-        try:
+        try:  # can't extract meaning of idiom
             pronounce_elem = WebDriverWait(self.driver, self.wait_time).until(
                 EC.presence_of_element_located((By.CLASS_NAME, "pronounce_area")))
             pronounce_text = pronounce_elem.text
+
             meaning_elem = WebDriverWait(self.driver, self.wait_time).until(
                 EC.presence_of_element_located((By.CLASS_NAME, "mean_tray")))
             meaning_text = meaning_elem.text
+
             word_data = [searched_word_text, pronounce_text, meaning_text]
+
             return word_data
         except:
             return [searched_word_text]
@@ -151,11 +154,18 @@ if __name__ == "__main__":
     # pororo 같이 검색어는 나오지만, pororo 단독으로 있지 않은 경우, 리스트가 공란으로 나옴.
     # adsjfdakfj와 같이 검색이 안되는 경우, 오류가 발생하고, 단어를 리스트로 반환함.
     ChromeDriver = Crawling()
-    input_word_lst = ["row", "center", "hurry", "spicy",
-                      "car", "nude", "apple", "carrot", "pororo", "pneumoconiosis", "adsjaljdfh"]
+    input_word_lst = ["row", "center", "vow", "in order to",
+                      "curb", "pororo", "adsjaljdfh"]
+    input_word_lst = ["in order to"]
     for input_word in input_word_lst:
         ChromeDriver.set_word(input_word)
-        word_lst = ChromeDriver.search_word()
-        print(word_lst, end="\n\n")
+        extracted_word_lst = ChromeDriver.search_word()
+        for extracted_word in extracted_word_lst:
+            if type(extracted_word) == list:
+                for text in extracted_word:
+                    print(text)
+            else:
+                print(extracted_word)
+            print()
 
     ChromeDriver.driver_close()
