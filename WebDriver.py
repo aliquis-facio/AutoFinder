@@ -6,7 +6,7 @@ from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import WebDriverWait
-from time import sleep
+from typing import List
 from webdriver_manager.chrome import ChromeDriverManager
 import chromedriver_autoinstaller
 import os
@@ -42,7 +42,7 @@ class Crawling:
 
     def __init__(self) -> None:
         # initial target word
-        self.word = ""
+        self.word: str = ""
 
         try:
             # driver's options
@@ -50,7 +50,7 @@ class Crawling:
             self.driver_options.add_experimental_option(
                 "excludeSwitches", ["enable-logging"])
             # self.driver_options.add_argument("headless")
-            self.wait_time = 5  # sec
+            self.wait_time: int = 5  # sec
 
             # initialize the lastest driver
             self.driver = webdriver.Chrome(service=Service(
@@ -59,28 +59,32 @@ class Crawling:
 
             # set intial page
             self.driver.get(url="https://en.dict.naver.com/#/main")
-        except SessionNotCreatedException:
+        except SessionNotCreatedException as e:
             print(
-                f'Chrome version may not be the latest version. Please update Chrome and try again.')
-            print(type(SessionNotCreatedException))
+                f"Chrome version may not be the latest version. Please update Chrome and try again.")
+            print(type(e))
+        except Exception as e:
+            print("Please try again later")
+            print(type(e))
 
-    def set_word(self, word):
+    def set_word(self, word: str):
         self.word = word
 
-    def get_word(self, searched_word_elem, searched_word_text):
+    def get_word(self, searched_word_elem, searched_word_text: str) -> List[str]:
         WebDriverWait(self.driver, self.wait_time).until(
             EC.element_to_be_clickable(searched_word_elem)).click()
 
         try:  # can't extract meaning of idiom
             pronounce_elem = WebDriverWait(self.driver, self.wait_time).until(
                 EC.presence_of_element_located((By.CLASS_NAME, "pronounce_area")))
-            pronounce_text = pronounce_elem.text
+            pronounce_text: str = pronounce_elem.text
 
             meaning_elem = WebDriverWait(self.driver, self.wait_time).until(
                 EC.presence_of_element_located((By.CLASS_NAME, "mean_tray")))
-            meaning_text = meaning_elem.text
+            meaning_text: str = meaning_elem.text
 
-            word_data = [searched_word_text, pronounce_text, meaning_text]
+            word_data: List[str] = [searched_word_text,
+                                    pronounce_text, meaning_text]
 
             return word_data
         except:
@@ -88,8 +92,8 @@ class Crawling:
         finally:
             self.driver.back()
 
-    def search_word(self):
-        word_data_lst = []
+    def search_word(self) -> List[str]:
+        word_data_lst: List[str] = []
 
         # enter the word in search box
         search_box = WebDriverWait(self.driver, self.wait_time).until(
@@ -99,8 +103,8 @@ class Crawling:
         search_box.send_keys(Keys.RETURN)
 
         try:
-            isPolsemy = True
-            i = 0
+            isPolsemy: bool = True
+            i: int = 0
             while(isPolsemy):
                 # find words in a result page after searching
                 search_page_entry = WebDriverWait(self.driver, self.wait_time).until(
@@ -110,10 +114,11 @@ class Crawling:
 
                 # check the finding word is a polsemy(word with multiple meanings) or containing a sub-entry
                 if (len(searched_word_elems) > i):
-                    curr_elem_text = searched_word_elems[i].text[:searched_word_elems[i].text.find(
+                    curr_elem_text: str = searched_word_elems[i].text[:searched_word_elems[i].text.find(
                         '\n')]
 
                     for j in range(len(self.word)):
+                        # self.word is not equal curr_elem_text
                         if self.word[j] != curr_elem_text[j]:
                             break
                     else:
@@ -124,7 +129,7 @@ class Crawling:
                         isPolsemy = True if (len(sup_num) > 0) and (
                             sup_num[0].text.strip() != "") else False
 
-                        curr_xpath = "//*[@id= \"searchPage_entry\"]/div/div[" + \
+                        curr_xpath: str = "//*[@id= \"searchPage_entry\"]/div/div[" + \
                             str(i + 1) + "]/div[1]/a"
 
                         curr_elem = WebDriverWait(self.driver, self.wait_time).until(

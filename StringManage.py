@@ -1,23 +1,24 @@
 from string import ascii_letters
+from typing import List, Dict
 from WebDriver import Crawling
 
 
 class Formatter:
-    parts_of_speech = ["명사", "대명사", "동사", "형용사", "부사",
-                       "전치사", "접속사", "한정사", "감탄사", "수사", "관계사"]
-    other_lst = ["문형", "유의어", "반의어", "참고어",
-                 "상호참조", "Help", "약어", "부가설명", "전문용어"]
-    ignored = ["VN"]
-    about_pronounce = ["발음듣기", "반복듣기"]
-    broken_char_in_utf8 = {"∙": "/", "ˌ": ", ", "ˈ": "\""}
+    parts_of_speech: List[str] = ["명사", "대명사", "동사", "형용사", "부사",
+                                  "전치사", "접속사", "한정사", "감탄사", "수사", "관계사"]
+    other_lst: List[str] = ["문형", "유의어", "반의어", "참고어",
+                            "상호참조", "Help", "약어", "부가설명", "전문용어"]
+    ignored: List[str] = ["VN"]
+    about_pronounce: List[str] = ["발음듣기", "반복듣기"]
+    broken_char_in_utf8: Dict[str, str] = {"∙": "/", "ˌ": ", ", "ˈ": "\""}
 
-    def __init__(self, extracted_word) -> None:
-        print(extracted_word)
-        self.input_word = None
-        self.pronounce = None
-        self.meaning = None
-        self.ex_sentence = None
-        self.tag = None
+    def __init__(self, extracted_word: List[str]) -> None:
+        print(f"extracted word\n{extracted_word}")
+        self.input_word: str = extracted_word[0]
+        self.pronounce: str = extracted_word[1]
+        self.meaning: str = extracted_word[2]
+        self.ex_sentence: str = None
+        self.tag: str = None
 
     def format_pronounce(self):
         for i in range(len(self.pronounce_lst)):
