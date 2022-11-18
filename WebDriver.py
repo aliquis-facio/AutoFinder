@@ -6,7 +6,7 @@ from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import WebDriverWait
-from typing import List
+from typing import List, Dict, Tuple
 from webdriver_manager.chrome import ChromeDriverManager
 import chromedriver_autoinstaller
 import os
@@ -49,7 +49,7 @@ class Crawling:
             self.driver_options = Options()
             self.driver_options.add_experimental_option(
                 "excludeSwitches", ["enable-logging"])
-            # self.driver_options.add_argument("headless")
+            self.driver_options.add_argument("headless")
             self.wait_time: int = 5  # sec
 
             # initialize the lastest driver
@@ -70,42 +70,56 @@ class Crawling:
     def set_word(self, word: str):
         self.word = word
 
-    def get_word(self, searched_word_elem, searched_word_text: str) -> List[str]:
-        WebDriverWait(self.driver, self.wait_time).until(
-            EC.element_to_be_clickable(searched_word_elem)).click()
+    def get_word(self, searched_word_elem, searched_word_text: str) -> Tuple[List[str], Dict[str, bool]]:
+        word_data: List[str] = [searched_word_text]
 
-        try:  # can't extract meaning of idiom
-            pronounce_elem = WebDriverWait(self.driver, self.wait_time).until(
-                EC.presence_of_element_located((By.CLASS_NAME, "pronounce_area")))
-            pronounce_text: str = pronounce_elem.text
+        isIdiom = False
+        text_lst = searched_word_text.split()
+        for round_bracket in ('(', ')'):
+            if round_bracket not in text_lst:
+                for i, text in enumerate(text_lst):
+                    if i > 0 and text.isalpha():
+                        isIdiom = True
+                        break
+
+        type_dict = dict()
+        type_dict.setdefault("isIdiom", isIdiom)
+
+        try:
+            WebDriverWait(self.driver, self.wait_time).until(
+                EC.element_to_be_clickable(searched_word_elem)).click()
+
+            if not isIdiom:
+                pronounce_elem = WebDriverWait(self.driver, self.wait_time).until(
+                    EC.presence_of_element_located((By.CLASS_NAME, "pronounce_area")))
+                pronounce_text: str = pronounce_elem.text
+                word_data.append(pronounce_text)
 
             meaning_elem = WebDriverWait(self.driver, self.wait_time).until(
                 EC.presence_of_element_located((By.CLASS_NAME, "mean_tray")))
             meaning_text: str = meaning_elem.text
-
-            word_data: List[str] = [searched_word_text,
-                                    pronounce_text, meaning_text]
-
-            return word_data
-        except:
-            return [searched_word_text]
+            word_data.append(meaning_text)
+        except Exception as e:
+            print(f"exception occured in Crawling.getword function: {type(e)}")
         finally:
             self.driver.back()
+            # word_data contatin [searched_word_text, (pronounce_text), (meaning_text)]
+            return (word_data, type_dict)
 
-    def search_word(self) -> List[str]:
+    def search_word(self) -> Tuple[List[str], Dict[str, bool]]:
         word_data_lst: List[str] = []
 
-        # enter the word in search box
-        search_box = WebDriverWait(self.driver, self.wait_time).until(
-            EC.presence_of_element_located((By.NAME, "query")))
-        search_box.clear()
-        search_box.send_keys(self.word)
-        search_box.send_keys(Keys.RETURN)
-
         try:
-            isPolsemy: bool = True
+            # enter the word in search box
+            search_box = WebDriverWait(self.driver, self.wait_time).until(
+                EC.presence_of_element_located((By.NAME, "query")))
+            search_box.clear()
+            search_box.send_keys(self.word)
+            search_box.send_keys(Keys.RETURN)
+
+            isPolysemy: bool = True
             i: int = 0
-            while(isPolsemy):
+            while(isPolysemy):
                 # find words in a result page after searching
                 search_page_entry = WebDriverWait(self.driver, self.wait_time).until(
                     EC.presence_of_element_located((By.ID, "searchPage_entry")))
@@ -113,21 +127,21 @@ class Crawling:
                     By.CLASS_NAME, "row")
 
                 # check the finding word is a polsemy(word with multiple meanings) or containing a sub-entry
-                if (len(searched_word_elems) > i):
+                if (i < len(searched_word_elems)):
                     curr_elem_text: str = searched_word_elems[i].text[:searched_word_elems[i].text.find(
                         '\n')]
 
                     for j in range(len(self.word)):
-                        # self.word is not equal curr_elem_text
+                        # if curr elem text is not equal with self.word
                         if self.word[j] != curr_elem_text[j]:
                             break
-                    else:
-                        # if sup class "num" is existed: polsemy(word with multiple meanings)
+                    else:  # if curr elem text is equal with self.word
+                        # if sup class "num" is existed: curr searched word is polsemy(word with multiple meanings)
                         sup_num = searched_word_elems[i].find_elements(
                             By.TAG_NAME, "sup")
 
-                        isPolsemy = True if (len(sup_num) > 0) and (
-                            sup_num[0].text.strip() != "") else False
+                        isPolysemy = True if ((i < len(sup_num)) and
+                                              (sup_num[0].text.strip() != "")) else False
 
                         curr_xpath: str = "//*[@id= \"searchPage_entry\"]/div/div[" + \
                             str(i + 1) + "]/div[1]/a"
@@ -136,19 +150,24 @@ class Crawling:
                             EC.presence_of_element_located((By.XPATH, curr_xpath)))
 
                         if curr_elem:
-                            word_data_lst.append(
-                                self.get_word(curr_elem, curr_elem_text))
+                            data = self.get_word(curr_elem, curr_elem_text)
+                            data[1]["isPolysemy"] = isPolysemy or i > 0
+                            data[1]["isError"] = False
+                            word_data_lst.append(data)
 
                     i += 1
                 else:
                     break
 
+            if len(word_data_lst) == 0:
+                raise Exception
+
             return word_data_lst
 
         except Exception as e:
             print(
-                f"occured error in \'{self.word}\': {type(e)}")
-            return [self.word]
+                f"exception occured in Crawling.searchword function finding '{self.word}': {type(e)}")
+            return ([self.word], {"isIdiom": False, "isPolysemy": False, "isError": True})
 
     def driver_close(self):
         # self.driver.close() # close this browser
@@ -156,21 +175,17 @@ class Crawling:
 
 
 if __name__ == "__main__":
-    # pororo 같이 검색어는 나오지만, pororo 단독으로 있지 않은 경우, 리스트가 공란으로 나옴.
-    # adsjfdakfj와 같이 검색이 안되는 경우, 오류가 발생하고, 단어를 리스트로 반환함.
     ChromeDriver = Crawling()
-    input_word_lst = ["row", "center", "vow", "in order to",
+    input_word_lst = ["row", "center", "bow", "in order to",
                       "curb", "pororo", "adsjaljdfh"]
-    input_word_lst = ["in order to"]
+    input_word_lst = ["pororo", "adsjaljdfh"]
+
     for input_word in input_word_lst:
         ChromeDriver.set_word(input_word)
         extracted_word_lst = ChromeDriver.search_word()
+
         for extracted_word in extracted_word_lst:
-            if type(extracted_word) == list:
-                for text in extracted_word:
-                    print(text)
-            else:
-                print(extracted_word)
-            print()
+            print(extracted_word)
+        print()
 
     ChromeDriver.driver_close()

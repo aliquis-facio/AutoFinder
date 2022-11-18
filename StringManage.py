@@ -1,5 +1,5 @@
 from string import ascii_letters
-from typing import List, Dict
+from typing import List, Dict, Tuple
 from WebDriver import Crawling
 
 
@@ -12,13 +12,30 @@ class Formatter:
     about_pronounce: List[str] = ["발음듣기", "반복듣기"]
     broken_char_in_utf8: Dict[str, str] = {"∙": "/", "ˌ": ", ", "ˈ": "\""}
 
-    def __init__(self, extracted_word: List[str]) -> None:
-        print(f"extracted word\n{extracted_word}")
-        self.input_word: str = extracted_word[0]
-        self.pronounce: str = extracted_word[1]
-        self.meaning: str = extracted_word[2]
-        self.ex_sentence: str = None
-        self.tag: str = None
+    def __init__(self, word_data: Tuple[List[str], Dict[str, bool]]) -> None:
+        print(word_data)
+        if not word_data[1]["isError"]:
+            self.word: str = word_data[0][0]
+            if not word_data[1]["isIdiom"]:
+                self.pronounce: str = word_data[0][1]
+            self.meaning: str = word_data[0][1] if word_data[
+                1]["isIdiom"] else word_data[0][2]
+            self.tag: List[str] = None
+        else:
+            raise Exception
+
+    def replace_broken_char(self):
+        exam_lst = [self.word, self.pronounce, self.meaning]
+
+        for exam_obj in exam_lst:
+            print(exam_obj)
+            # for text in exam_obj.split():
+            #     print(text)
+        #     for i in range(len(exam_obj)):
+        #         for char in self.broken_char_in_utf8.keys():
+        #             if char in exam_obj[i]:
+        #                 exam_obj[i] = exam_obj[i].replace(
+        #                     char, self.broken_char_in_utf8[char])
 
     def format_pronounce(self):
         for i in range(len(self.pronounce_lst)):
@@ -79,16 +96,6 @@ class Formatter:
 
         return string
 
-    def format_ex_sentence(self):
-        for i in range(len(self.ex_sentence_lst)):
-            if self.ex_sentence_lst[i] in self.about_pronounce:
-                self.ex_sentence_lst[i] = ""
-            if i == len(self.ex_sentence_lst) - 1:
-                self.ex_sentence_lst[i] = ""
-
-        string = '\n'.join(self.ex_sentence_lst)
-        return string
-
     def format_tag(self):
         for i in range(len(self.meaning_lst)):
             for word_class in self.parts_of_speech:
@@ -107,17 +114,6 @@ class Formatter:
                 string += (self.tag_lst[i] + ' ')
         return string
 
-    def replace_broken_char(self):
-        exam_lst = [self.word_lst, self.pronounce_lst,
-                    self.meaning_lst, self.ex_sentence_lst]
-
-        for obj in exam_lst:
-            for i in range(len(obj)):
-                for char in self.broken_char_in_utf8.keys():
-                    if char in obj[i]:
-                        obj[i] = obj[i].replace(
-                            char, self.broken_char_in_utf8[char])
-
 
 if __name__ == "__main__":
     input_word_lst = ["row", "center", "vow", "bow",
@@ -128,14 +124,15 @@ if __name__ == "__main__":
 
     for input_word in input_word_lst:
         ChromeDriver.set_word(input_word)
-        extracted_word_lst = ChromeDriver.search_word()
+        extracted_word = ChromeDriver.search_word()
         # print(extracted_word_lst, end="\n\n")
 
-        for extracted_word in extracted_word_lst:
+        try:
             formatter = Formatter(extracted_word)
-            print()
-        # formatter.replace_broken_char()
-
+            print("\nfix text")
+            formatter.replace_broken_char()
+        except Exception as e:
+            print(type(e))
         # print(f"--- after formatting ---")
         # print(formatter.format_pronounce())
         # print(formatter.format_meaning())
