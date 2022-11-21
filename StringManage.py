@@ -1,3 +1,5 @@
+# -*- coding: utf-8 -*-
+
 from string import ascii_letters
 from typing import List, Dict, Tuple
 from WebDriver import Crawling
@@ -6,65 +8,49 @@ from WebDriver import Crawling
 class Formatter:
     parts_of_speech: List[str] = ["명사", "대명사", "동사", "형용사", "부사",
                                   "전치사", "접속사", "한정사", "감탄사", "수사", "관계사"]
-    other_lst: List[str] = ["문형", "유의어", "반의어", "참고어",
-                            "상호참조", "Help", "약어", "부가설명", "전문용어"]
+    relation_lst: List[str] = ["문형", "유의어", "반의어", "참고어",
+                               "상호참조", "Help", "약어", "부가설명", "전문용어"]
     ignored: List[str] = ["VN"]
-    about_pronounce: List[str] = ["발음듣기", "반복듣기"]
+    # about_pronounce: List[str] = ["발음듣기", "반복듣기"]
     broken_char_in_utf8: Dict[str, str] = {"∙": "/", "ˌ": ", ", "ˈ": "\""}
 
     def __init__(self, word_data: Tuple[List[str], Dict[str, bool]]) -> None:
-        print(word_data)
         if not word_data[1]["isError"]:
             self.word: str = word_data[0][0]
             if not word_data[1]["isIdiom"]:
                 self.pronounce: str = word_data[0][1]
             self.meaning: str = word_data[0][1] if word_data[
                 1]["isIdiom"] else word_data[0][2]
-            self.tag: List[str] = None
+            self.tag: Dict[str, bool] = word_data[1]
         else:
             raise Exception
 
     def replace_broken_char(self):
-        exam_lst = [self.word, self.pronounce, self.meaning]
-
-        for exam_obj in exam_lst:
-            print(exam_obj)
-            # for text in exam_obj.split():
-            #     print(text)
-        #     for i in range(len(exam_obj)):
-        #         for char in self.broken_char_in_utf8.keys():
-        #             if char in exam_obj[i]:
-        #                 exam_obj[i] = exam_obj[i].replace(
-        #                     char, self.broken_char_in_utf8[char])
+        pass
 
     def format_pronounce(self):
-        for i in range(len(self.pronounce_lst)):
-            if self.pronounce_lst[i].startswith("발음 "):
-                self.pronounce_lst[i] = self.pronounce_lst[i][3:]
-
-        string = '\n'.join(self.pronounce_lst)
-        return string
+        pass
 
     def format_meaning(self):
-        for i in range(len(self.meaning_lst)):
-            idx = self.meaning_lst[i].find(' ')
+        for i in range(len(self.meaning)):
+            idx = self.meaning[i].find(' ')
 
-            if (self.meaning_lst[i] in self.parts_of_speech) and (i != 0):  # ex) 명사
-                if i + 1 < len(self.meaning_lst):
-                    if self.meaning_lst[i + 1].startswith("1. "):
+            if (self.meaning[i] in self.parts_of_speech) and (i != 0):  # ex) 명사
+                if i + 1 < len(self.meaning):
+                    if self.meaning[i + 1].startswith("1. "):
                         for word_class in self.parts_of_speech:
-                            if (word_class in self.meaning_lst[i]):
-                                self.meaning_lst[i] = '\n' + \
-                                    self.meaning_lst[i]
+                            if (word_class in self.meaning[i]):
+                                self.meaning[i] = '\n' + \
+                                    self.meaning[i]
                                 break
 
-            elif (self.meaning_lst[i][idx - 1:idx] == "."):  # ex) 7. U // 일
-                if i + 1 < len(self.meaning_lst):
-                    idx = self.meaning_lst[i + 1].find(' ')
+            elif (self.meaning[i][idx - 1:idx] == "."):  # ex) 7. U // 일
+                if i + 1 < len(self.meaning):
+                    idx = self.meaning[i + 1].find(' ')
 
-                    if (self.meaning_lst[i + 1][idx - 1:idx] != ".") and not(self.meaning_lst[i + 1] in self.other_lst) and not(self.meaning_lst[i + 1] in self.parts_of_speech):
+                    if (self.meaning[i + 1][idx - 1:idx] != ".") and not(self.meaning[i + 1] in self.relation_lst) and not(self.meaning[i + 1] in self.parts_of_speech):
 
-                        temp_string = self.meaning_lst[i + 1]
+                        temp_string = self.meaning[i + 1]
                         # for ignore_char in self.ignore_lst:
                         #     temp_string = temp_string.replace(ignore_char, "")
 
@@ -72,20 +58,20 @@ class Formatter:
                             if char in temp_string:
                                 break
                         else:
-                            self.meaning_lst[i] = f"{self.meaning_lst[i]} // {self.meaning_lst[i + 1]}"
-                            self.meaning_lst[i + 1] = ""
+                            self.meaning[i] = f"{self.meaning[i]} // {self.meaning[i + 1]}"
+                            self.meaning[i + 1] = ""
 
-            elif self.meaning_lst[i - 1] in self.other_lst:  # ex) 문형: sth ~
-                for obj in self.other_lst:
-                    if self.meaning_lst[i - 1] == obj:
-                        self.meaning_lst[i] = f"{obj}: {self.meaning_lst[i]}"
+            elif self.meaning[i - 1] in self.relation_lst:  # ex) 문형: sth ~
+                for obj in self.relation_lst:
+                    if self.meaning[i - 1] == obj:
+                        self.meaning[i] = f"{obj}: {self.meaning[i]}"
                         break
-                self.meaning_lst[i - 1] = ""
+                self.meaning[i - 1] = ""
 
         temp_lst = []
-        for i in range(len(self.meaning_lst)):
-            if self.meaning_lst[i]:
-                temp_lst.append(self.meaning_lst[i])
+        for i in range(len(self.meaning)):
+            if self.meaning[i]:
+                temp_lst.append(self.meaning[i])
 
         string = ""
         for i in range(len(temp_lst)):
@@ -96,12 +82,23 @@ class Formatter:
 
         return string
 
+    def format_meaning(self):
+        text_lst = self.meaning.split('\n')
+
+        for i, text in enumerate(text_lst):
+            print(text)
+            if (text[0].isnumeric() and text[1] == ".") or (text[0].isalpha() and text[1] == "."):
+                if text[0] == '1':
+                    text_lst[i - 1] = '\n' + text_lst[i - 1]
+
+        self.meaning = '\n'.join(text_lst)
+
     def format_tag(self):
-        for i in range(len(self.meaning_lst)):
+        for i in range(len(self.meaning)):
             for word_class in self.parts_of_speech:
-                if (word_class in self.meaning_lst[i]) and (self.meaning_lst[i + 1].startswith("1. ")):
+                if (word_class in self.meaning[i]) and (self.meaning[i + 1].startswith("1. ")):
                     # 명사와 대명사 구분
-                    if word_class == "명사" and len(self.meaning_lst[i]) != 3:
+                    if word_class == "명사" and len(self.meaning[i]) != 3:
                         continue
                     self.tag_lst.append(f"#{word_class}")
                     break
@@ -116,26 +113,26 @@ class Formatter:
 
 
 if __name__ == "__main__":
-    input_word_lst = ["row", "center", "vow", "bow",
-                      "curb", "pororo", "adsjaljdfh"]
+    input_word_lst = ["center", "bow", "curb",
+                      "apple", "row", "vow", "in order to", "treat"]
+    input_word_lst = ["center", "bow"]
 
     ChromeDriver = Crawling()
     fomatter = None
 
     for input_word in input_word_lst:
         ChromeDriver.set_word(input_word)
-        extracted_word = ChromeDriver.search_word()
-        # print(extracted_word_lst, end="\n\n")
+        extracted_word_lst = ChromeDriver.search_word()
 
         try:
-            formatter = Formatter(extracted_word)
-            print("\nfix text")
-            formatter.replace_broken_char()
+            for extracted_word in extracted_word_lst:
+                formatter = Formatter(extracted_word)
+                formatter.format_meaning()
+                print(f"\n\n{formatter.meaning}")
         except Exception as e:
             print(type(e))
         # print(f"--- after formatting ---")
         # print(formatter.format_pronounce())
-        # print(formatter.format_meaning())
         # print(formatter.format_tag())
 
         # print("\n\n")
