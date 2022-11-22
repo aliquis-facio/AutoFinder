@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 
+import re
 from string import ascii_letters
 from typing import List, Dict, Tuple
 from WebDriver import Crawling
@@ -21,7 +22,8 @@ class Formatter:
                 self.pronounce: str = word_data[0][1]
             self.meaning: str = word_data[0][1] if word_data[
                 1]["isIdiom"] else word_data[0][2]
-            self.tag: Dict[str, bool] = word_data[1]
+            self.optional_data: Dict[str, bool] = word_data[1]
+            self.tag: List[str] = None
         else:
             raise Exception
 
@@ -82,14 +84,74 @@ class Formatter:
 
         return string
 
+    def kmp_search(self, txt: str, pat: str):
+        M: int = len(pat)
+        N: int = len(txt)
+
+        lps: List[int] = [0] * M
+
+        # preprocess the pattern
+        self.compute_lps(pat, lps)
+
+        i: int = 0  # idx for txt[]
+        j: int = 0  # idx for pat[]
+
+        while i < N:
+            if pat[j] == txt[i]:  # 문자열이 같은 경우
+                i += 1
+                j += 1
+            elif pat[j] != txt[i]:  # pattern을 찾지 못한 경우
+                if j != 0:
+                    j = lps[j - 1]  # 짧은 lps에 대해 재검사
+                else:  # 일치하는 부분이 없음
+                    i += 1
+
+            if j == M:  # pattern을 찾은 경우
+                j = lps[j - 1]
+
+    def compute_lps(self, pat: str, lps: List[int]):
+        leng: int = 0  # length of the previous longest prefix suffix
+
+        i: int = 1  # always lps[0] == 0 -> while은 i == 1부터 시작함
+        while i < len(pat):
+            if pat[i] == pat[leng]:  # 이전 idx에서 같음
+                leng += 1
+                lps[i] = leng
+                i += 1
+            else:
+                if leng != 0:  # 일치하지 않음
+                    leng = lps[leng - 1]
+                    # 이전 idx에서는 같았으므로 leng을 줄여서 다시 검사 -> i는 증가X
+                else:  # 이전 idx에서도 같지 않음
+                    lps[i] = 0
+                    i += 1
+
     def format_meaning(self):
         text_lst = self.meaning.split('\n')
 
-        for i, text in enumerate(text_lst):
-            print(text)
-            if (text[0].isnumeric() and text[1] == ".") or (text[0].isalpha() and text[1] == "."):
-                if text[0] == '1':
-                    text_lst[i - 1] = '\n' + text_lst[i - 1]
+        # fix 1 ~ len(text_lst) and then modify to use enumerate
+        for i in range(len(text_lst)):
+            if (text_lst[i][0].isnumeric() and text_lst[i][1] == ".") or (text_lst[i][0].encode().isalpha() and text_lst[i][1] == "."):
+                if text_lst[i][0] == "1" and i != 1:
+                    text_lst[i - 1] = "\n" + text_lst[i - 1]
+            else:
+                erased_text = re.sub(
+                    r"[^\uAC00-\uD7A30-9a-zA-Z\s]", "", text_lst[i])
+                print(f"erased_text: {erased_text}")
+
+                # if erased_text in self.relation_lst:
+                #     if i + 1 < len(text_lst):
+                #         text_lst[i] = f"{text_lst[i]}: {text_lst[i + 1]}"
+                #         text_lst[i + 1] = ""
+
+                if (not erased_text.encode().isalpha()) and (not erased_text in self.relation_lst):
+                    if i - 1 > 0 and len(text_lst[i - 1]) >= 2:
+                        print(f"text_lst[i - 1]: {text_lst[i - 1]}")
+                        if (text_lst[i - 1][0].isnumeric() and text_lst[i - 1][1] == ".") or (text_lst[i - 1][0].encode().isalpha() and text_lst[i - 1][1] == "."):
+                            if i + 1 < len(text_lst) and not text_lst[i + 1][0] == "1":
+                                text_lst[i -
+                                         1] = f"{text_lst[i - 1]} // {text_lst[i]}"
+                                text_lst[i] = ""
 
         self.meaning = '\n'.join(text_lst)
 
@@ -124,17 +186,17 @@ if __name__ == "__main__":
         ChromeDriver.set_word(input_word)
         extracted_word_lst = ChromeDriver.search_word()
 
-        try:
-            for extracted_word in extracted_word_lst:
-                formatter = Formatter(extracted_word)
-                formatter.format_meaning()
-                print(f"\n\n{formatter.meaning}")
-        except Exception as e:
-            print(type(e))
-        # print(f"--- after formatting ---")
-        # print(formatter.format_pronounce())
-        # print(formatter.format_tag())
+        # try:
+        #     for extracted_word in extracted_word_lst:
+        #         formatter = Formatter(extracted_word)
+        #         formatter.format_meaning()
+        #         print(f"\n\n{formatter.word}\n{formatter.meaning}")
+        # except Exception as e:
+        #     print(type(e))
 
-        # print("\n\n")
+        for extracted_word in extracted_word_lst:
+            formatter = Formatter(extracted_word)
+            formatter.format_meaning()
+            print(f"\n\n{formatter.word}\n{formatter.meaning}")
 
     ChromeDriver.driver_close()
