@@ -111,65 +111,59 @@ class Crawling:
     def search_word(self) -> Tuple[List[str], Dict[str, bool]]:
         word_data_lst: List[str] = []
 
-        try:
-            # enter the word in search box
-            search_box = WebDriverWait(self.driver, self.wait_time).until(
-                EC.presence_of_element_located((By.NAME, "query")))
-            search_box.clear()
-            search_box.send_keys(self.word)
-            search_box.send_keys(Keys.RETURN)
+        # enter the word in search box
+        search_box = WebDriverWait(self.driver, self.wait_time).until(
+            EC.presence_of_element_located((By.NAME, "query")))
+        search_box.clear()
+        search_box.send_keys(self.word)
+        search_box.send_keys(Keys.RETURN)
 
-            isPolysemy: bool = True
-            i: int = 0
-            while(isPolysemy):
-                # find words in a result page after searching
-                search_page_entry = WebDriverWait(self.driver, self.wait_time).until(
-                    EC.presence_of_element_located((By.ID, "searchPage_entry")))
-                searched_word_elems = search_page_entry.find_elements(
-                    By.CLASS_NAME, "row")
+        isPolysemy: bool = True
+        i: int = 0
+        while(isPolysemy):
+            # find words in a result page after searching
+            search_page_entry = WebDriverWait(self.driver, self.wait_time).until(
+                EC.presence_of_element_located((By.ID, "searchPage_entry")))
+            searched_word_elems = search_page_entry.find_elements(
+                By.CLASS_NAME, "row")
 
-                # check the finding word is a polsemy(word with multiple meanings) or containing a sub-entry
-                if (i < len(searched_word_elems)):
-                    curr_elem_text: str = searched_word_elems[i].text[:searched_word_elems[i].text.find(
-                        '\n')]
+            # check the finding word is a polsemy(word with multiple meanings) or containing a sub-entry
+            if (i < len(searched_word_elems)):
+                curr_elem_text: str = searched_word_elems[i].text[:searched_word_elems[i].text.find(
+                    '\n')]
 
-                    for j in range(len(self.word)):
-                        # if curr elem text is not equal with self.word
-                        if self.word[j] != curr_elem_text[j]:
-                            break
-                    else:  # if curr elem text is equal with self.word
-                        # if sup class "num" is existed: curr searched word is polsemy(word with multiple meanings)
-                        sup_num = searched_word_elems[i].find_elements(
-                            By.TAG_NAME, "sup")
+                for j in range(len(self.word)):
+                    # if curr elem text is not equal with self.word
+                    if self.word[j] != curr_elem_text[j]:
+                        break
+                else:  # if curr elem text is equal with self.word
+                    # if sup class "num" is existed: curr searched word is polsemy(word with multiple meanings)
+                    sup_num = searched_word_elems[i].find_elements(
+                        By.TAG_NAME, "sup")
 
-                        isPolysemy = True if ((i < len(sup_num)) and
-                                              (sup_num[0].text.strip() != "")) else False
+                    isPolysemy = True if ((i < len(sup_num)) and
+                                          (sup_num[0].text.strip() != "")) else False
 
-                        curr_xpath: str = "//*[@id= \"searchPage_entry\"]/div/div[" + \
-                            str(i + 1) + "]/div[1]/a"
+                    curr_xpath: str = "//*[@id= \"searchPage_entry\"]/div/div[" + \
+                        str(i + 1) + "]/div[1]/a"
 
-                        curr_elem = WebDriverWait(self.driver, self.wait_time).until(
-                            EC.presence_of_element_located((By.XPATH, curr_xpath)))
+                    curr_elem = WebDriverWait(self.driver, self.wait_time).until(
+                        EC.presence_of_element_located((By.XPATH, curr_xpath)))
 
-                        if curr_elem:
-                            data = self.get_word(curr_elem, curr_elem_text)
-                            data[1]["isPolysemy"] = isPolysemy or i > 0
-                            data[1]["isError"] = False
-                            word_data_lst.append(data)
+                    if curr_elem:
+                        data = self.get_word(curr_elem, curr_elem_text)
+                        data[1]["isPolysemy"] = isPolysemy or i > 0
+                        data[1]["isError"] = False
+                        word_data_lst.append(data)
 
-                    i += 1
-                else:
-                    break
+                i += 1
+            else:
+                break
 
-            if len(word_data_lst) == 0:
-                raise Exception
+        if len(word_data_lst) == 0:
+            raise Exception
 
-            return word_data_lst
-
-        except Exception as e:
-            print(
-                f"exception occured in Crawling.searchword function finding '{self.word}': {type(e)}")
-            return ([self.word], {"isIdiom": False, "isPolysemy": False, "isError": True})
+        return word_data_lst
 
     def driver_close(self):
         # self.driver.close() # close this browser
