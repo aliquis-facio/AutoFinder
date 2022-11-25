@@ -172,9 +172,7 @@ class Crawling:
 
 if __name__ == "__main__":
     ChromeDriver = Crawling()
-    input_word_lst = ["row", "center", "bow", "in order to",
-                      "curb", "pororo", "adsjaljdfh"]
-    input_word_lst = ["pororo", "adsjaljdfh"]
+    input_word_lst = ["lean against", "contrary to", "on the contrary"]
 
     for input_word in input_word_lst:
         ChromeDriver.set_word(input_word)

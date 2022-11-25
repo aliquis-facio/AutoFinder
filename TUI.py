@@ -36,9 +36,6 @@ class AnkiTui:
                 f.write(word_data["meaning"] + "\t")
                 f.write(tag + "\n")
 
-                print("{}\n{}\n{}\n{}\n".format(
-                    word_data["word"], word_data["pronounce"], word_data["meaning"], tag))
-
             f.close()
 
     def ouput(self):
@@ -55,13 +52,20 @@ class AnkiTui:
                         formatter = Formatter(extracted_word)
                         word_data = formatter.return_data()
                         word_data_lst.append(word_data)
-                except:
+
+                        print(f"curr word: {word_data}")
+
+                except Exception as e:
                     self.error_words.append(input_word)
+                    print(f"curr word: {input_word} -> {type(e)}")
 
             ChromeDriver.driver_close()
             self.file_write(word_data_lst)
 
-            print(self.error_words)
+            if self.error_words:
+                print("--- error words ---")
+                for error_word in self.error_words:
+                    print(error_word)
 
     def quit_(self, parse_lst: List[str]):
         self.finish = True

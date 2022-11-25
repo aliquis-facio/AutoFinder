@@ -12,7 +12,7 @@ class Formatter:
                                            "계사": "동사", "자동사": "동사", "타동사": "동사", "조동사": "동사",
                                            "관사": "한정사", "양화사": "한정사", "소유격": "한정사"}
     relation_lst: List[str] = ["문형", "유의어", "반의어", "참고어",
-                               "상호참조", "Help", "약어", "부가설명", "전문용어"]
+                               "상호참조", "Help", "약어", "부가설명", "전문용어", "줄임말"]
     broken_char_in_utf8: Dict[str, str] = {"∙": "/", "ˌ": ", ", "ˈ": "\""}
 
     def __init__(self, word_data: Tuple[List[str], Dict[str, bool]]) -> None:
@@ -32,7 +32,8 @@ class Formatter:
 
     def is_ordering(self, string: str) -> bool:
         if len(string) >= 2:
-            return True if (string[0].isnumeric() and string[1] == ".") or (string[0].encode().isalpha() and string[1] == ".") else False
+            i: int = string.find(".")
+            return True if (0 < i <= 2) and (string[i - 1].isnumeric() or string[i - 1].encode().isalpha()) else False
         else:
             return False
 
@@ -42,6 +43,18 @@ class Formatter:
     def delete_punctuation_marks(self, string: str) -> str:
         return re.sub(r"[^\uAC00-\uD7A30-9a-zA-Z]", "", string)
 
+    def format_pronounce(self):
+        # copy self.pronounce to text_lst
+        text_lst: List[str] = self.pronounce.split('\n')
+        size: int = len(text_lst)
+
+        # modify self.pronounce using formatted text_lst
+        self.pronounce = ""
+        for i in range(size - 1):
+            if text_lst[i]:
+                self.pronounce += (text_lst[i] + "<br>")
+        self.pronounce += text_lst[-1]
+
     def format_meaning(self):
         # copy self.meaning to text_lst
         text_lst: List[str] = self.meaning.split('\n')
@@ -49,6 +62,10 @@ class Formatter:
 
         # formatting text_lst
         for i in range(1, size - 1):
+            # print(f"i - 1: {i - 1} -> {text_lst[i - 1]}")
+            # print(f"i: {i} -> {text_lst[i]}")
+            # print(f"i + 1: {i + 1} -> {text_lst[i + 1]}\n")
+
             if len(text_lst[i]) <= 1:
                 continue
 
@@ -58,6 +75,7 @@ class Formatter:
 
                 if not self.is_ordering(text_lst[i + 1]):
                     string = self.delete_punctuation_marks(text_lst[i + 1])
+                    # print(f"delete_punctuation_marks: {string}")
                     if self.is_additional_meaning(string):
                         text_lst[i] = f"{text_lst[i]} // {text_lst[i + 1]}"
                         text_lst[i + 1] = ""
@@ -83,7 +101,7 @@ class Formatter:
         text_lst: List[str] = self.meaning.split("<br>")
         size: int = len(text_lst)
 
-        for i in range(1, size - 1):
+        for i in range(1, size):
             if len(text_lst[i]) <= 1:
                 continue
 
@@ -102,6 +120,8 @@ class Formatter:
         self.tag = list(set(self.tag))
 
     def return_data(self) -> Dict[str, Any]:
+        if not self.optional_data["isIdiom"]:
+            self.format_pronounce()
         self.format_meaning()
         self.format_tag()
 
@@ -112,8 +132,7 @@ class Formatter:
 
 
 if __name__ == "__main__":
-    input_word_lst = ["center", "bow", "curb",
-                      "apple", "row", "vow", "in order to", "treat"]
+    input_word_lst = ["lean against", "contrary to", "on the contrary"]
 
     ChromeDriver = Crawling()
     fomatter = None
@@ -122,19 +141,12 @@ if __name__ == "__main__":
         ChromeDriver.set_word(input_word)
         extracted_word_lst = ChromeDriver.search_word()
 
-        # try:
-        #     for extracted_word in extracted_word_lst:
-        #         formatter = Formatter(extracted_word)
-        #         formatter.format_meaning()
-        #         print(f"\n\n{formatter.word}\n{formatter.meaning}")
-        # except Exception as e:
-        #     print(type(e))
-
         for extracted_word in extracted_word_lst:
             formatter = Formatter(extracted_word)
             formatter.format_meaning()
             formatter.format_tag()
-            print(
-                f"--- --- ---\n{formatter.word}\n{formatter.meaning}\n{formatter.tag}")
+
+            print("--- --- ---\n{}\n{}\n{}\n".format(formatter.word.replace("<br>", "\n"),
+                  formatter.meaning.replace("<br>", "\n"), ", ".join(formatter.tag)))
 
     ChromeDriver.driver_close()
