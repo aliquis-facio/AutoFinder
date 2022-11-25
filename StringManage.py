@@ -132,7 +132,7 @@ class Formatter:
 
 
 if __name__ == "__main__":
-    input_word_lst = ["bow"]
+    input_word_lst = ["drive", "on the contrary"]
 
     ChromeDriver = Crawling()
     fomatter = None
