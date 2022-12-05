@@ -64,13 +64,13 @@ class Formatter:
         for i in range(1, size - 1):
             # print(f"i - 1: {i - 1} -> {text_lst[i - 1]}")
             # print(f"i: {i} -> {text_lst[i]}")
-            # print(f"i + 1: {i + 1} -> {text_lst[i + 1]}\n")
+            # print(f"i + 1: {i + 1} -> {text_lst[i + 1]}", end = "\n\n")
 
             if len(text_lst[i]) <= 1:
                 continue
 
             if self.is_ordering(text_lst[i]):
-                if text_lst[i][0] == "1" and i != 1:
+                if text_lst[i][:2] == "1." and i != 1:
                     text_lst[i - 1] = f"<br>{text_lst[i - 1]}"
 
                 if not self.is_ordering(text_lst[i + 1]):
@@ -133,6 +133,7 @@ class Formatter:
 
 if __name__ == "__main__":
     input_word_lst = ["drive", "on the contrary", "own"]
+    input_word_lst = ["drive"]
 
     ChromeDriver = Crawling()
     fomatter = None

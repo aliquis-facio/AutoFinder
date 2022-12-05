@@ -75,8 +75,8 @@ class Crawling:
     def get_word(self, searched_word_elem, searched_word_text: str) -> Tuple[List[str], Dict[str, bool]]:
         word_data: List[str] = [searched_word_text]
 
-        isIdiom = False
-        text_lst = searched_word_text.split()
+        isIdiom: bool = False
+        text_lst: List[str] = searched_word_text.split()
         for round_bracket in ('(', ')'):
             if round_bracket not in text_lst:
                 for i, text in enumerate(text_lst):

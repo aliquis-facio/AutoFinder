@@ -30,7 +30,10 @@ class AnkiTui:
 
         with open(f"{self.file_path}\\{self.file_name}", mode, encoding="utf-8") as f:
             for word_data in words_data:
-                tag: str = "#" + " #".join(word_data["tag"])
+                for i in range(len(word_data["tag"])):
+                    word_data["tag"][i] = ("#" + word_data["tag"][i])
+                tag: str = " ".join(word_data["tag"])
+
                 f.write(word_data["word"] + "<br>")
                 f.write(word_data["pronounce"] + "\t")
                 f.write(word_data["meaning"] + "\t")
@@ -43,8 +46,9 @@ class AnkiTui:
             ChromeDriver = Crawling()
             word_data_lst = []
 
-            for input_word in self.input_words.copy():
+            for i, input_word in enumerate(self.input_words.copy()):
                 try:
+                    print(f"progress: {i + 1} / {len(self.input_words)}")
                     ChromeDriver.set_word(input_word)
                     extracted_word_lst = ChromeDriver.search_word()
 
@@ -53,11 +57,11 @@ class AnkiTui:
                         word_data = formatter.return_data()
                         word_data_lst.append(word_data)
 
-                        print(f"curr word: {word_data}")
+                        print(f"curr word: {word_data}\n")
 
                 except Exception as e:
                     self.error_words.append(input_word)
-                    print(f"curr word: {input_word} -> {type(e)}")
+                    print(f"curr word: {input_word} -> {type(e)}\n")
 
             ChromeDriver.driver_close()
             self.file_write(word_data_lst)
