@@ -70,7 +70,7 @@ class Crawling:
             print(type(e))
 
     def set_word(self, word: str):
-        self.word = word
+        self.word = word.lower()
 
     def get_word(self, searched_word_elem, searched_word_text: str) -> Tuple[List[str], Dict[str, bool]]:
         word_data: List[str] = [searched_word_text]
