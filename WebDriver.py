@@ -120,7 +120,7 @@ class Crawling:
 
         isPolysemy: bool = True
         i: int = 0
-        while(isPolysemy):
+        while (isPolysemy):
             # find words in a result page after searching
             search_page_entry = WebDriverWait(self.driver, self.wait_time).until(
                 EC.presence_of_element_located((By.ID, "searchPage_entry")))
@@ -172,7 +172,7 @@ class Crawling:
 
 if __name__ == "__main__":
     ChromeDriver = Crawling()
-    input_word_lst = ["lean against", "contrary to", "on the contrary"]
+    input_word_lst = ["apple", "utilize"]
 
     for input_word in input_word_lst:
         ChromeDriver.set_word(input_word)
