@@ -1,24 +1,15 @@
-import re
-from typing import Union
+import sys
 
-lst: list[Union[str, int]]
+parentheses = ["<", ">"]
 
 
-str = "AA**BB#@$CC 가나다-123"
+def erase_parentheses():
+    pass
 
-new_str = re.sub(r"[^\uAC00-\uD7A30-9a-zA-Z\s]", "", str)
-print(new_str)
 
-temp = "V The pines bowed in the wind"
-print(temp.encode().isalpha())
-
-A = [1, 2, 3]
-B = [4, 5, 6]
-C = [7, 8, 9]
-
-for i in zip(A, B, C):
-    print(i)
-
-text = ""
-if text:
-    print("text")
+with open("./TestText/output.txt", "rt", encoding="utf-8") as f:
+    for _ in range(10):
+        line = f.readline().split("\t")
+        for i in range(len(line)):
+            print(f"{i}: {line[i]}")
+        print("--- --- --- --- ---")

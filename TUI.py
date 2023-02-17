@@ -15,8 +15,8 @@ class AnkiTui:
         self.input_words: Set[str] = set()
         self.error_words: List[str] = []
 
-        self.commands_dic: Dict[str, str] = {"!quit": "quit entering"}
-        self.commands: List[str] = list(self.commands_dic.keys())
+        self.commands_info: Dict[str, str] = {"!quit": "quit entering"}
+        self.commands: List[str] = list(self.commands_info.keys())
 
         self.special_characters: List[str] = [" ", "-", "\n", "!"]
 

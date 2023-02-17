@@ -54,6 +54,7 @@ class Formatter:
             if text_lst[i]:
                 self.pronounce += (text_lst[i] + "<br>")
         self.pronounce += text_lst[-1]
+        self.pronounce.strip()
 
     def format_meaning(self):
         # copy self.meaning to text_lst
@@ -90,6 +91,7 @@ class Formatter:
             if text_lst[i]:
                 self.meaning += (text_lst[i] + "<br>")
         self.meaning += text_lst[-1]
+        self.meaning.strip()
 
     def format_tag(self):
         # add from self.optional data
@@ -132,8 +134,8 @@ class Formatter:
 
 
 if __name__ == "__main__":
-    input_word_lst = ["drive", "on the contrary", "own"]
-    input_word_lst = ["drive"]
+    input_word_lst = [
+        "counterattack", "desiccate", "Table", "swift", "sovereign", "sab", "put down", "prior to", "pan", "moderate", "as well as", "lowest point of foundation"]
 
     ChromeDriver = Crawling()
     fomatter = None
@@ -147,7 +149,7 @@ if __name__ == "__main__":
             formatter.format_meaning()
             formatter.format_tag()
 
-            print("--- --- ---\n{}\n{}\n{}\n".format(formatter.word.replace("<br>", "\n"),
+            print("--- --- ---\n{}\n{}\ntag: {}\n".format(formatter.word.replace("<br>", "\n"),
                   formatter.meaning.replace("<br>", "\n"), ", ".join(formatter.tag)))
 
     ChromeDriver.driver_close()
