@@ -26,15 +26,10 @@ somplimentary
 
 # 2. tag 관련.
 ## 2.1. tag가 누락됨.
-make a reservation  
-sovereign  
-sab  
 pan(2)
-<!-- "형용사, 대명사" 부분에서 꼬임. -->
+intermittently  
 
 ## 2.2. 다른 tag가 삽입됨.
-intermittently  
-lowest point of foundation  
 
 # 3. 의미가 공란으로 남아 있음.
 conveniently  
@@ -57,19 +52,10 @@ pan(2)
 own  
 
 # 4. formatting 관련.
-counterattack  
-desiccate  
-Table 
-<!-- (카지노 용어) -->
-swift  
-sovereign  
-sab  
 put down  
 prior to  
 pan(1)  
-moderate  
 as well as  
-lowest point of foundation  
 
 ## 4.1. 부표제어
 enroll  

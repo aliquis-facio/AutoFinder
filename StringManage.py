@@ -134,22 +134,10 @@ class Formatter:
 if __name__ == "__main__":
     input_word_lst = [
         "intermittently",
-        # "lowest point of foundation",
-        # "make a reservation",
-        # "sovereign",
-        # "sab",
-        # "pan",
-        # "counterattack",
-        # "desiccate",
-        # "swift",
-        # "sovereign",
-        # "sab",
         "put down",
         "prior to",
         "pan",
-        "moderate",
         "as well as",
-        "lowest point of foundation",
     ]
 
     ChromeDriver = Crawling()
