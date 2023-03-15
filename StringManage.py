@@ -112,13 +112,12 @@ class Formatter:
                 self.tag[i] = self.sub_parts_of_speech[self.tag[i]]
 
         self.tag = list(set(self.tag))
+        if "" in self.tag:
+            self.tag.remove("")
 
         for k, v in self.optional_data.items():
             if v and not (len(self.tag) > 0 and k == "isIdiom"):
                 self.tag.append(k[2:])
-
-        if "" in self.tag:
-            self.tag.remove("")
 
     def return_data(self) -> Dict[str, Any]:
         if not self.optional_data["isIdiom"]:
@@ -134,9 +133,24 @@ class Formatter:
 
 if __name__ == "__main__":
     input_word_lst = [
-        # "counterattack", "desiccate", "swift",
-        # "pan", "moderate",
-        "lowest point of foundation", "sab", "pan", "own",]
+        "intermittently",
+        # "lowest point of foundation",
+        # "make a reservation",
+        # "sovereign",
+        # "sab",
+        # "pan",
+        # "counterattack",
+        # "desiccate",
+        # "swift",
+        # "sovereign",
+        # "sab",
+        "put down",
+        "prior to",
+        "pan",
+        "moderate",
+        "as well as",
+        "lowest point of foundation",
+    ]
 
     ChromeDriver = Crawling()
     fomatter = None
