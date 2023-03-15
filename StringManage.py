@@ -106,16 +106,16 @@ class Formatter:
         self.meaning.strip()
 
     def format_tag(self):
-        for k, v in self.optional_data.items():
-            if v:
-                self.tag.append(k[2:])
-
         for i in range(len(self.tag)):
             self.tag[i] = self.tag[i].strip()
             if self.tag[i] in self.sub_parts_of_speech:
                 self.tag[i] = self.sub_parts_of_speech[self.tag[i]]
 
         self.tag = list(set(self.tag))
+
+        for k, v in self.optional_data.items():
+            if v and not (len(self.tag) > 0 and k == "isIdiom"):
+                self.tag.append(k[2:])
 
         if "" in self.tag:
             self.tag.remove("")
@@ -134,8 +134,8 @@ class Formatter:
 
 if __name__ == "__main__":
     input_word_lst = [
-        "counterattack", "desiccate", "swift",
-        "pan", "moderate",
+        # "counterattack", "desiccate", "swift",
+        # "pan", "moderate",
         "lowest point of foundation", "sab", "pan", "own",]
 
     ChromeDriver = Crawling()
