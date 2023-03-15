@@ -30,7 +30,6 @@ make a reservation
 sovereign  
 sab  
 pan(2)
-own  
 <!-- "형용사, 대명사" 부분에서 꼬임. -->
 
 ## 2.2. 다른 tag가 삽입됨.

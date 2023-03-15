@@ -15,15 +15,16 @@ class Formatter:
                                "상호참조", "Help", "약어", "부가설명", "전문용어", "줄임말"]
     broken_char_in_utf8: Dict[str, str] = {"∙": "/", "ˌ": ", ", "ˈ": "\""}
 
-    def __init__(self, word_data: Tuple[List[str], Dict[str, bool]]) -> None:
-        if not word_data[1]["isError"]:
+    def __init__(self, word_data: Tuple[List[str], List[str], Dict[str, bool]]) -> None:
+        # parameter: ([영단어, 의미], [품사], {'isIdiom': bool, 'isPolysemy': bool, 'isError': bool})
+        if not word_data[2]["isError"]:
             self.word: str = word_data[0][0]
-            if not word_data[1]["isIdiom"]:
+            if not word_data[2]["isIdiom"]:
                 self.pronounce: str = word_data[0][1]
             self.meaning: str = word_data[0][1] if word_data[
-                1]["isIdiom"] else word_data[0][2]
-            self.optional_data: Dict[str, bool] = word_data[1]
-            self.tag: List[str] = []
+                2]["isIdiom"] else word_data[0][2]
+            self.optional_data: Dict[str, bool] = word_data[2]
+            self.tag: List[str] = word_data[1]
         else:
             raise Exception
 
@@ -38,7 +39,21 @@ class Formatter:
             return False
 
     def is_additional_meaning(self, string: str) -> bool:
-        return True if not (string.encode().isalpha() or (string in self.relation_lst) or (string in self.parts_of_speech) or (string in self.sub_parts_of_speech.keys())) else False
+        if string.encode().isalpha():
+            return False
+
+        if string in self.relation_lst:
+            return False
+
+        for part in self.parts_of_speech:
+            if string.startswith(part):
+                return False
+
+        for sub_part in self.sub_parts_of_speech.keys():
+            if string.startswith(sub_part):
+                return False
+
+        return True
 
     def delete_punctuation_marks(self, string: str) -> str:
         return re.sub(r"[^\uAC00-\uD7A30-9a-zA-Z]", "", string)
@@ -65,7 +80,7 @@ class Formatter:
         for i in range(1, size - 1):
             # print(f"i - 1: {i - 1} -> {text_lst[i - 1]}")
             # print(f"i: {i} -> {text_lst[i]}")
-            # print(f"i + 1: {i + 1} -> {text_lst[i + 1]}", end = "\n\n")
+            # print(f"i + 1: {i + 1} -> {text_lst[i + 1]}", end="\n\n")
 
             if len(text_lst[i]) <= 1:
                 continue
@@ -77,6 +92,7 @@ class Formatter:
                 if not self.is_ordering(text_lst[i + 1]):
                     string = self.delete_punctuation_marks(text_lst[i + 1])
                     # print(f"delete_punctuation_marks: {string}")
+                    # print(f"bool: {self.is_additional_meaning(string)}")
                     if self.is_additional_meaning(string):
                         text_lst[i] = f"{text_lst[i]} // {text_lst[i + 1]}"
                         text_lst[i + 1] = ""
@@ -93,32 +109,47 @@ class Formatter:
         self.meaning += text_lst[-1]
         self.meaning.strip()
 
+    # def format_tag(self):
+    #     # add from self.optional data
+    #     for k, v in self.optional_data.items():
+    #         if v:
+    #             self.tag.append(k[2:])
+
+    #     # add from self.meaning
+    #     text_lst: List[str] = self.meaning.split("<br>")
+    #     size: int = len(text_lst)
+
+    #     for i in range(1, size):
+    #         if len(text_lst[i]) <= 1:
+    #             continue
+
+    #         if text_lst[i][0] == "1" and text_lst[i][1] == ".":
+    #             for text in text_lst[i - 1].split(','):
+    #                 for part in self.parts_of_speech:
+    #                     if text.strip().startswith(part):
+    #                         self.tag.append(part)
+    #                         break
+    #             else:
+    #                 for sub_part in self.sub_parts_of_speech.keys():
+    #                     if text_lst[i - 1].startswith(sub_part):
+    #                         self.tag.append(self.sub_parts_of_speech[sub_part])
+    #                         break
+
+    #     # delete overlapped elem
+    #     self.tag = list(set(self.tag))
+
     def format_tag(self):
-        # add from self.optional data
         for k, v in self.optional_data.items():
             if v:
                 self.tag.append(k[2:])
 
-        # add from self.meaning
-        text_lst: List[str] = self.meaning.split("<br>")
-        size: int = len(text_lst)
+        for i in range(len(self.tag)):
+            # print(f"curr tag: {self.tag[i]}")
+            if self.tag[i] in self.sub_parts_of_speech:
+                # print(
+                #     f"{self.word}: {self.tag[i]} -> {self.sub_parts_of_speech[self.tag[i]]}")
+                self.tag[i] = self.sub_parts_of_speech[self.tag[i]]
 
-        for i in range(1, size):
-            if len(text_lst[i]) <= 1:
-                continue
-
-            if text_lst[i][0] == "1" and text_lst[i][1] == ".":
-                for part in self.parts_of_speech:
-                    if text_lst[i - 1].startswith(part):
-                        self.tag.append(part)
-                        break
-                else:
-                    for sub_part in self.sub_parts_of_speech.keys():
-                        if text_lst[i - 1].startswith(sub_part):
-                            self.tag.append(self.sub_parts_of_speech[sub_part])
-                            break
-
-        # delete overlapped elem
         self.tag = list(set(self.tag))
 
     def return_data(self) -> Dict[str, Any]:
@@ -135,7 +166,9 @@ class Formatter:
 
 if __name__ == "__main__":
     input_word_lst = [
-        "counterattack", "desiccate", "Table", "swift", "sovereign", "sab", "put down", "prior to", "pan", "moderate", "as well as", "lowest point of foundation"]
+        "counterattack", "desiccate", "Table", "swift", "put down",
+        "prior to", "pan", "moderate", "as well as", "lowest point of foundation",
+        "make a reservation", "sab", "pan", "own",]
 
     ChromeDriver = Crawling()
     fomatter = None

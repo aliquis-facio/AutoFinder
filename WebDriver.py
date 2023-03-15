@@ -72,7 +72,7 @@ class Crawling:
     def set_word(self, word: str):
         self.word = word.lower()
 
-    def get_word(self, searched_word_elem, searched_word_text: str) -> Tuple[List[str], Dict[str, bool]]:
+    def get_raw_data(self, searched_word_elem, searched_word_text: str) -> Tuple[List[str], List[str], Dict[str, bool]]:
         word_data: List[str] = [searched_word_text]
 
         isIdiom: bool = False
@@ -100,15 +100,26 @@ class Crawling:
             meaning_elem = WebDriverWait(self.driver, self.wait_time).until(
                 EC.presence_of_element_located((By.CLASS_NAME, "mean_tray")))
             meaning_text: str = meaning_elem.text
+
+            parts_of_speech_elem = self.driver.find_elements(
+                By.CLASS_NAME, "part_speech")
+            parts_of_speech_text_lst: List[str] = []
+            for elem in parts_of_speech_elem:
+                text_lst = elem.text.split(",")
+                for text in text_lst:
+                    parts_of_speech_text_lst.append(text.strip())
+
             word_data.append(meaning_text)
+            # word_data.append(parts_of_speech_text_lst)
         except Exception as e:
             print(f"exception occured in Crawling.getword function: {type(e)}")
         finally:
             self.driver.back()
             # word_data contatin [searched_word_text, (pronounce_text), (meaning_text)]
-            return (word_data, type_dict)
+            return (word_data, parts_of_speech_text_lst, type_dict)
 
-    def search_word(self) -> Tuple[List[str], Dict[str, bool]]:
+    def search_word(self) -> Tuple[List[str], List[str], Dict[str, bool]]:
+        # ouput: ([영단어, 의미], [품사], {'isIdiom': bool, 'isPolysemy': bool, 'isError': bool})
         word_data_lst: List[str] = []
 
         # enter the word in search box
@@ -151,9 +162,9 @@ class Crawling:
                         EC.presence_of_element_located((By.XPATH, curr_xpath)))
 
                     if curr_elem:
-                        data = self.get_word(curr_elem, curr_elem_text)
-                        data[1]["isPolysemy"] = isPolysemy or i > 0
-                        data[1]["isError"] = False
+                        data = self.get_raw_data(curr_elem, curr_elem_text)
+                        data[2]["isPolysemy"] = isPolysemy or i > 0
+                        data[2]["isError"] = False
                         word_data_lst.append(data)
 
                 i += 1
@@ -172,7 +183,7 @@ class Crawling:
 
 if __name__ == "__main__":
     ChromeDriver = Crawling()
-    input_word_lst = ["apple", "utilize"]
+    input_word_lst = ["lowest point of foundation", "own", "pan"]
 
     for input_word in input_word_lst:
         ChromeDriver.set_word(input_word)

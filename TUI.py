@@ -20,7 +20,7 @@ class AnkiTui:
 
         self.special_characters: List[str] = [" ", "-", "\n", "!"]
 
-        self.finish = None
+        self.finish: bool = None
 
         self.driver = self.formatter = None
 
