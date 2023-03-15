@@ -77,29 +77,25 @@ class Formatter:
         size: int = len(text_lst)
 
         # formatting text_lst
-        for i in range(1, size - 1):
-            # print(f"i - 1: {i - 1} -> {text_lst[i - 1]}")
-            # print(f"i: {i} -> {text_lst[i]}")
-            # print(f"i + 1: {i + 1} -> {text_lst[i + 1]}", end="\n\n")
-
-            if len(text_lst[i]) <= 1:
+        for i in range(size - 1):
+            if len(text_lst[i + 1]) <= 1:
                 continue
 
-            if self.is_ordering(text_lst[i]):
-                if text_lst[i][:2] == "1." and i != 1:
-                    text_lst[i - 1] = f"<br>{text_lst[i - 1]}"
+            if self.is_ordering(text_lst[i + 1]):
+                if text_lst[i + 1][:2] == "1." and i != 0:
+                    text_lst[i] = f"<br>{text_lst[i]}"
 
-                if not self.is_ordering(text_lst[i + 1]):
-                    string = self.delete_punctuation_marks(text_lst[i + 1])
-                    # print(f"delete_punctuation_marks: {string}")
-                    # print(f"bool: {self.is_additional_meaning(string)}")
+                if i + 2 < size and not self.is_ordering(text_lst[i + 2]):
+                    string = self.delete_punctuation_marks(text_lst[i + 2])
                     if self.is_additional_meaning(string):
-                        text_lst[i] = f"{text_lst[i]} // {text_lst[i + 1]}"
-                        text_lst[i + 1] = ""
+                        text_lst[i +
+                                 1] = f"{text_lst[i + 1]} // {text_lst[i + 2]}"
+                        text_lst[i + 2] = ""
 
-            elif text_lst[i] in self.relation_lst:
-                text_lst[i] = f"{text_lst[i]}: {text_lst[i + 1]}"
-                text_lst[i + 1] = ""
+            elif text_lst[i + 1] in self.relation_lst:
+                if i + 2 < size:
+                    text_lst[i + 1] = f"{text_lst[i + 1]}: {text_lst[i + 2]}"
+                    text_lst[i + 2] = ""
 
         # modify self.meaning using formatted text_lst
         self.meaning = ""
@@ -138,9 +134,9 @@ class Formatter:
 
 if __name__ == "__main__":
     input_word_lst = [
-        "counterattack", "desiccate", "Table", "swift", "put down",
-        "prior to", "pan", "moderate", "as well as", "lowest point of foundation",
-        "make a reservation", "sab", "pan", "own",]
+        "counterattack", "desiccate", "swift",
+        "pan", "moderate",
+        "lowest point of foundation", "sab", "pan", "own",]
 
     ChromeDriver = Crawling()
     fomatter = None
