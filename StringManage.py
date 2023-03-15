@@ -109,45 +109,13 @@ class Formatter:
         self.meaning += text_lst[-1]
         self.meaning.strip()
 
-    # def format_tag(self):
-    #     # add from self.optional data
-    #     for k, v in self.optional_data.items():
-    #         if v:
-    #             self.tag.append(k[2:])
-
-    #     # add from self.meaning
-    #     text_lst: List[str] = self.meaning.split("<br>")
-    #     size: int = len(text_lst)
-
-    #     for i in range(1, size):
-    #         if len(text_lst[i]) <= 1:
-    #             continue
-
-    #         if text_lst[i][0] == "1" and text_lst[i][1] == ".":
-    #             for text in text_lst[i - 1].split(','):
-    #                 for part in self.parts_of_speech:
-    #                     if text.strip().startswith(part):
-    #                         self.tag.append(part)
-    #                         break
-    #             else:
-    #                 for sub_part in self.sub_parts_of_speech.keys():
-    #                     if text_lst[i - 1].startswith(sub_part):
-    #                         self.tag.append(self.sub_parts_of_speech[sub_part])
-    #                         break
-
-    #     # delete overlapped elem
-    #     self.tag = list(set(self.tag))
-
     def format_tag(self):
         for k, v in self.optional_data.items():
             if v:
                 self.tag.append(k[2:])
 
         for i in range(len(self.tag)):
-            # print(f"curr tag: {self.tag[i]}")
             if self.tag[i] in self.sub_parts_of_speech:
-                # print(
-                #     f"{self.word}: {self.tag[i]} -> {self.sub_parts_of_speech[self.tag[i]]}")
                 self.tag[i] = self.sub_parts_of_speech[self.tag[i]]
 
         self.tag = list(set(self.tag))
