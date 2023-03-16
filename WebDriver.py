@@ -89,7 +89,6 @@ class Crawling:
 
         parts_of_speech_text_lst: List[str] = []
 
-        print(f"isIdiom: {isIdiom}")
         try:
             WebDriverWait(self.driver, self.wait_time).until(
                 EC.element_to_be_clickable(searched_word_elem)).click()
@@ -105,13 +104,11 @@ class Crawling:
                     # not exist html class "pronounce_area"
                     pronounce_text: str = ""
                 finally:
-                    print(f"pronounce: {pronounce_text}")
                     word_data.append(pronounce_text)
 
             meaning_elem = WebDriverWait(self.driver, self.wait_time).until(
                 EC.presence_of_element_located((By.CLASS_NAME, "mean_tray")))
             meaning_text: str = meaning_elem.text
-            print(f"meaning: {meaning_text}")
 
             parts_of_speech_elem = self.driver.find_elements(
                 By.CLASS_NAME, "part_speech")
@@ -119,7 +116,6 @@ class Crawling:
                 text_lst = elem.text.split(",")
                 for text in text_lst:
                     parts_of_speech_text_lst.append(text.strip())
-            print(f"parts of speech: {parts_of_speech_text_lst}")
 
             word_data.append(meaning_text)
             # word_data.append(parts_of_speech_text_lst)
@@ -143,7 +139,6 @@ class Crawling:
 
         isPolysemy: bool = True
         i: int = 0
-        print(f"polysemy: {isPolysemy}")
         while (isPolysemy):
             # find words in a result page after searching
             search_page_entry = WebDriverWait(self.driver, self.wait_time).until(
@@ -155,7 +150,6 @@ class Crawling:
             if (i < len(searched_word_elems)):
                 curr_elem_text: str = searched_word_elems[i].text[:searched_word_elems[i].text.find(
                     '\n')]
-                print(f"curr elem: {curr_elem_text}")
 
                 for j in range(len(self.word)):
                     # if curr elem text is not equal with self.word
@@ -168,18 +162,15 @@ class Crawling:
 
                     isPolysemy = True if ((i < len(sup_num)) and
                                           (sup_num[0].text.strip() != "")) else False
-                    print(f"inner polysemy: {isPolysemy}")
 
                     curr_xpath: str = "//*[@id= \"searchPage_entry\"]/div/div[" + \
                         str(i + 1) + "]/div[1]/a"
-                    print(f"curr xpath: {curr_xpath}")
 
                     curr_elem = WebDriverWait(self.driver, self.wait_time).until(
                         EC.presence_of_element_located((By.XPATH, curr_xpath)))
 
                     if curr_elem:
                         data = self.get_raw_data(curr_elem, curr_elem_text)
-                        print(f"data: {data}")
                         data[2]["isPolysemy"] = isPolysemy or i > 0
                         data[2]["isError"] = False
                         word_data_lst.append(data)
@@ -206,15 +197,14 @@ if __name__ == "__main__":
         # "prior to",
         # "pan",
         # "as well as",
-        "rumor",
+        # "rumor",
         # "utilize",
-        "stress out",
+        # "stress out",
         # "briskness",
         # "unlimit",
         # "artifact",
         # "apart from",
-        # "inquire",
-        # "daughty",
+        "inquire",
     ]
 
     for input_word in input_word_lst:

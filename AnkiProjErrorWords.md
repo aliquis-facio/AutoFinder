@@ -7,8 +7,7 @@ briskness
 unlimit  
 artifact  
 apart from  
-inquire  
-daughty  
+inquire    
 
 ## 1.2. time exception
 abetsuppress  
@@ -59,3 +58,4 @@ as well as
 
 ## 4.1. 부표제어
 enroll  
+inquire  
