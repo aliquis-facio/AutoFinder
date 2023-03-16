@@ -51,7 +51,7 @@ class Crawling:
             self.driver_options = Options()
             self.driver_options.add_experimental_option(
                 "excludeSwitches", ["enable-logging"])
-            # self.driver_options.add_argument("headless")
+            self.driver_options.add_argument("headless")
             self.wait_time: int = 5  # sec
 
             # initialize the lastest driver
