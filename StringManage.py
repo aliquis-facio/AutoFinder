@@ -109,6 +109,8 @@ class Formatter:
     def format_tag(self):
         for i in range(len(self.tag)):
             self.tag[i] = self.tag[i].strip()
+            if self.tag[i].encode().isascii():
+                self.tag[i] = ""
             if self.tag[i] in self.sub_parts_of_speech:
                 self.tag[i] = self.sub_parts_of_speech[self.tag[i]]
 
@@ -134,10 +136,11 @@ class Formatter:
 
 if __name__ == "__main__":
     input_word_lst = [
-        "as well as",
-        "rumor",
-        "prior to",
-        "pan",
+        "content",
+        # "as well as",
+        # "rumor",
+        # "prior to",
+        # "pan",
     ]
 
     ChromeDriver = Crawling()
