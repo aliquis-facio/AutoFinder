@@ -47,6 +47,9 @@
 ```
 다음과 같이 변하지 않는다.
 `1. (상황/개용/추가 설명) // 의미`
+17. 'stress out'과 같은 몇몇개의 숙어의 경우는 오픈 사전으로 넘어가서 네이버 사전과는 다른 html 구조이기 때문에 작동이 잘 되지 않는 것으로 보임.
+18. ~~'rumor'와 같은 발음이 표기되지 않은 단어들은 html에서 pronounce area 부분이 존재하지 않아 에러가 발생하는 것 같음.~~
+
 # ankidroid에서 기타(깃발 태그) 의미
 1. flag-red: formatting 오류, 뜻 부분 중 하나 이상이 공란
 2. marked: 발음이 어렵다거나 뭐 그런 거
@@ -73,7 +76,7 @@
     self.driver - 크롤링할 웹드라이버
     self.formatter - 안키드로이드에 맞춘 포맷팅을 위한 포맷터
 2. file_write
-3. outpt
+3. output
 4. quit
 5. main
 ## StringManage.py

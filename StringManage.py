@@ -138,6 +138,15 @@ if __name__ == "__main__":
         "prior to",
         "pan",
         "as well as",
+        "rumor",
+        "utilize",
+        "stress out",
+        "briskness",
+        "unlimit",
+        "artifact",
+        "apart from",
+        "inquire",
+        "daughty",
     ]
 
     ChromeDriver = Crawling()
