@@ -54,10 +54,16 @@ class AnkiTui:
 
                     for extracted_word in extracted_word_lst:
                         formatter = Formatter(extracted_word)
-                        word_data = formatter.return_data()
+                        word_data: Dict[str, any] = formatter.return_data()
                         word_data_lst.append(word_data)
 
-                        print(f"curr word: {word_data}\n")
+                        # print(f"curr word: {word_data}\n")
+                        print(f"word: {word_data['word']}")
+                        print(f"pronounce: {word_data['pronounce']}")
+                        meaning: str = word_data['meaning'].replace(
+                            '<br>', '\n').strip()
+                        print(f"meaning: {meaning}")
+                        print(f"tag: {word_data['tag']}\n")
 
                 except Exception as e:
                     self.error_words.append(input_word)
@@ -92,7 +98,8 @@ class AnkiTui:
                 else:
                     print(f"You may enter wrong command: {input_word}")
             else:
-                self.input_words.add(input_word)
+                if input_word:
+                    self.input_words.add(input_word)
 
         self.ouput()
 
