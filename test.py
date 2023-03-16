@@ -39,7 +39,7 @@ class Formatter:
             return False
 
     def is_additional_meaning(self, string: str) -> bool:
-        if string.encode().isalpha():
+        if string.encode().isalnum():
             return False
 
         if string in self.relation_lst:
@@ -81,21 +81,20 @@ class Formatter:
             if len(text_lst[i]) <= 1:
                 continue
 
-            if self.is_ordering(text_lst[i + 1]):
-                if text_lst[i + 1][:2] == "1." and i != 0:
+            if self.is_ordering(text_lst[i]):
+                if text_lst[i][:2] == "1." and i - 1 > 0:
                     text_lst[i] = f"<br>{text_lst[i]}"
 
-                if i + 2 < size - 1 and not self.is_ordering(text_lst[i + 2]):
-                    string = self.delete_punctuation_marks(text_lst[i + 2])
+                if i + 2 < size and not self.is_ordering(text_lst[i + 2]):
+                    string = self.delete_punctuation_marks(text_lst[i + 1])
                     if self.is_additional_meaning(string):
-                        text_lst[i +
-                                 1] = f"{text_lst[i + 1]} // {text_lst[i + 2]}"
-                        text_lst[i + 2] = ""
+                        text_lst[i] = f"{text_lst[i]} // {text_lst[i + 1]}"
+                        text_lst[i + 1] = ""
 
-            elif text_lst[i + 1] in self.relation_lst:
-                if i + 2 < size - 1:
-                    text_lst[i + 1] = f"{text_lst[i + 1]}: {text_lst[i + 2]}"
-                    text_lst[i + 2] = ""
+            elif text_lst[i] in self.relation_lst:
+                if i + 1 < size:
+                    text_lst[i] = f"{text_lst[i]}: {text_lst[i + 1]}"
+                    text_lst[i + 1] = ""
 
         # modify self.meaning using formatted text_lst
         self.meaning = ""
@@ -106,19 +105,18 @@ class Formatter:
         self.meaning.strip()
 
     def format_tag(self):
-        for k, v in self.optional_data.items():
-            if v:
-                self.tag.append(k[2:])
-
         for i in range(len(self.tag)):
             self.tag[i] = self.tag[i].strip()
             if self.tag[i] in self.sub_parts_of_speech:
                 self.tag[i] = self.sub_parts_of_speech[self.tag[i]]
 
         self.tag = list(set(self.tag))
-
         if "" in self.tag:
             self.tag.remove("")
+
+        for k, v in self.optional_data.items():
+            if v and not (len(self.tag) > 0 and k == "isIdiom"):
+                self.tag.append(k[2:])
 
     def return_data(self) -> Dict[str, Any]:
         if not self.optional_data["isIdiom"]:
@@ -134,8 +132,9 @@ class Formatter:
 
 if __name__ == "__main__":
     input_word_lst = [
-        "counterattack", "desiccate", "swift", "pan", "moderate",
-        "lowest point of foundation", "sab", "pan", "own",]
+        "prior to",
+        "pan",
+    ]
 
     ChromeDriver = Crawling()
     fomatter = None

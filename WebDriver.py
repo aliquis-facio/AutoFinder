@@ -192,19 +192,7 @@ class Crawling:
 if __name__ == "__main__":
     ChromeDriver = Crawling()
     input_word_lst = [
-        # "intermittently",
-        # "put down",
-        # "prior to",
-        # "pan",
-        # "as well as",
-        # "rumor",
-        # "utilize",
-        # "stress out",
-        # "briskness",
-        # "unlimit",
-        # "artifact",
-        # "apart from",
-        "inquire",
+        "rumor",
     ]
 
     for input_word in input_word_lst:
