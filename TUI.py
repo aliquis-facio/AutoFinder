@@ -4,7 +4,7 @@ import time
 import os
 from WebDriver import Crawling
 from StringManage import Formatter
-from typing import List, Dict, Set
+from typing import List, Dict, Set, Tuple
 
 
 class AnkiTui:
@@ -25,7 +25,7 @@ class AnkiTui:
         self.driver = self.formatter = None
 
     def file_write(self, words_data: List[Dict]):
-        mode = "wt" if not os.path.isfile(
+        mode: str = "wt" if not os.path.isfile(
             f"{self.file_path}\\{self.file_name}") else "at"
 
         with open(f"{self.file_path}\\{self.file_name}", mode, encoding="utf-8") as f:
@@ -44,13 +44,14 @@ class AnkiTui:
     def ouput(self):
         if self.input_words:
             ChromeDriver = Crawling()
-            word_data_lst = []
+            word_data_lst: List[Dict[str, any]] = []
 
             for i, input_word in enumerate(self.input_words.copy()):
                 try:
                     print(f"progress: {i + 1} / {len(self.input_words)}")
                     ChromeDriver.set_word(input_word)
-                    extracted_word_lst = ChromeDriver.search_word()
+                    extracted_word_lst: Tuple[List[str], List[str],
+                                              Dict[str, bool]] = ChromeDriver.search_word()
 
                     for extracted_word in extracted_word_lst:
                         formatter = Formatter(extracted_word)
