@@ -21,3 +21,10 @@ intermittently
 ## 4.1. 부표제어
 enroll  
 inquire  
+
+pip install --upgrade pip
+pip install selenium
+pip install webdriver_manager
+python -m pip install chromedriver_autoinstaller
+
+OS: Windows
