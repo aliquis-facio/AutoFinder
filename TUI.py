@@ -34,7 +34,7 @@ class AnkiTui:
                     word_data["tag"][i] = ("#" + word_data["tag"][i])
                 tag: str = " ".join(word_data["tag"])
 
-                f.write(word_data["word"] + "<br>")
+                f.write(word_data["word"] + "\t")
                 f.write(word_data["pronounce"] + "\t")
                 f.write(word_data["meaning"] + "\t")
                 f.write(tag + "\n")
