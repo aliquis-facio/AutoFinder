@@ -10,38 +10,9 @@ from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import WebDriverWait
 from typing import List, Dict, Tuple
 from webdriver_manager.chrome import ChromeDriverManager
-import chromedriver_autoinstaller
-import os
-import shutil
 
 
 class Crawling:
-    def chromedriver_update(self):  # this solution had not been needed anymore
-        chrome_ver = chromedriver_autoinstaller.get_chrome_version().split('.')[
-            0]
-        curr_lst = os.listdir(os.getcwd())
-        driver_folder_lst = []
-
-        # find out every folders including chromedriver
-        for obj in curr_lst:
-            path = os.path.join(os.getcwd(), obj)
-            if os.path.isdir(path):
-                if "chromedriver.exe" in os.listdir(obj):
-                    driver_folder_lst.append(obj)
-
-        old_version = list(set(driver_folder_lst) - set([chrome_ver]))
-
-        # remove old version
-        for obj in old_version:
-            path = os.path.join(os.getcwd(), obj)
-            shutil.rmtree(path)
-
-        # install the lastest version driver
-        if not chrome_ver in curr_lst:
-            chromedriver_autoinstaller.install(True)
-
-        return os.path.join(os.getcwd(), chrome_ver)
-
     def __init__(self) -> None:
         # initial target word
         self.word: str = ""

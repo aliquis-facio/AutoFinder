@@ -14,17 +14,24 @@ class Formatter:
     relation_lst: List[str] = ["문형", "유의어", "반의어", "참고어",
                                "상호참조", "Help", "약어", "부가설명", "전문용어", "줄임말"]
     broken_char_in_utf8: Dict[str, str] = {"∙": "/", "ˌ": ", ", "ˈ": "\""}
+    tag_dict: Dict[str, str] = {"숙어": "Idiom(숙어)", "예문": "Example(예문)", "다의어": "Polysemy(다의어)", "접두사": "Prefix(접두사)", "명사": "Noun(명사)", "대명사": "Pronoun(대명사)", "동사": "Verb(동사)", "형용사": "Adjective(형용사)", "부사": "Adverb(부사)",
+                                  "전치사": "Preposition", "접속사": "Conjunction(접속사)", "한정사": "Determiner(한정사)", "감탄사": "Intergection/Exclamation(감탄사)", "수사": "Numeral(수사)", }
+    word: str = None
+    pronounce: str = None
+    meaning: str = None
+    optional_data: Dict[str, bool] = None
+    tag: List[str] = None
 
     def __init__(self, word_data: Tuple[List[str], List[str], Dict[str, bool]]) -> None:
-        # parameter: ([영단어, 의미], [품사], {'isIdiom': bool, 'isPolysemy': bool, 'isError': bool})
+        # word_data: ([영단어, 의미], [품사], {'isIdiom': bool, 'isPolysemy': bool, 'isError': bool})
         if not word_data[2]["isError"]:
-            self.word: str = word_data[0][0]
+            self.word = word_data[0][0]
             if not word_data[2]["isIdiom"]:
-                self.pronounce: str = word_data[0][1]
-            self.meaning: str = word_data[0][1] if word_data[
+                self.pronounce = word_data[0][1]
+            self.meaning = word_data[0][1] if word_data[
                 2]["isIdiom"] else word_data[0][2]
-            self.optional_data: Dict[str, bool] = word_data[2]
-            self.tag: List[str] = word_data[1]
+            self.optional_data = word_data[2]
+            self.tag = word_data[1]
         else:
             raise Exception
 
@@ -58,7 +65,7 @@ class Formatter:
     def delete_punctuation_marks(self, string: str) -> str:
         return re.sub(r"[^\uAC00-\uD7A30-9a-zA-Z]", "", string)
 
-    def format_pronounce(self):
+    def format_pronounce(self) -> None:
         # copy self.pronounce to text_lst
         text_lst: List[str] = self.pronounce.split('\n')
         size: int = len(text_lst)
@@ -71,7 +78,7 @@ class Formatter:
         self.pronounce += text_lst[-1]
         self.pronounce.strip()
 
-    def format_meaning(self):
+    def format_meaning(self) -> None:
         # copy self.meaning to text_lst
         text_lst: List[str] = self.meaning.split('\n')
         size: int = len(text_lst)
@@ -106,7 +113,7 @@ class Formatter:
         if self.meaning[-4:] == "<br>":
             self.meaning = self.meaning[:-4]
 
-    def format_tag(self):
+    def format_tag(self) -> None:
         for i in range(len(self.tag)):
             self.tag[i] = self.tag[i].strip()
             if self.tag[i].encode().isascii():

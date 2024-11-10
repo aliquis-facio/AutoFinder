@@ -56,6 +56,10 @@
 3. 
 
 # 프로그램 코드 개요
+## import
+pip install selenium
+pip install ChromeDriverManager
+
 ## TUI.py
 1. init: text ui를 위한 변수들 초기화 함수
     `paramter: self`
