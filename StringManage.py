@@ -14,8 +14,11 @@ class Formatter:
     relation_lst: List[str] = ["문형", "유의어", "반의어", "참고어",
                                "상호참조", "Help", "약어", "부가설명", "전문용어", "줄임말"]
     broken_char_in_utf8: Dict[str, str] = {"∙": "/", "ˌ": ", ", "ˈ": "\""}
-    tag_dict: Dict[str, str] = {"숙어": "Idiom(숙어)", "예문": "Example(예문)", "다의어": "Polysemy(다의어)", "접두사": "Prefix(접두사)", "명사": "Noun(명사)", "대명사": "Pronoun(대명사)", "동사": "Verb(동사)", "형용사": "Adjective(형용사)", "부사": "Adverb(부사)",
-                                  "전치사": "Preposition", "접속사": "Conjunction(접속사)", "한정사": "Determiner(한정사)", "감탄사": "Intergection/Exclamation(감탄사)", "수사": "Numeral(수사)", }
+    tag_dict: Dict[str, str] = {"Idiom": "Idiom(숙어)", "Polysemy": "Polysemy(다의어)", # "예문": "Example(예문)",
+                                "접두사": "Prefix(접두사)", "명사": "Noun(명사)", "대명사": "Pronoun(대명사)",
+                                "동사": "Verb(동사)", "형용사": "Adjective(형용사)", "부사": "Adverb(부사)",
+                                "전치사": "Preposition", "접속사": "Conjunction(접속사)", "한정사": "Determiner(한정사)", 
+                                "감탄사": "Intergection/Exclamation(감탄사)", "수사": "Numeral(수사)", "관사": "Article(관사)", }
     word: str = None
     pronounce: str = None
     meaning: str = None
@@ -128,6 +131,11 @@ class Formatter:
         for k, v in self.optional_data.items():
             if v and not (len(self.tag) > 0 and k == "isIdiom"):
                 self.tag.append(k[2:])
+        
+        for i in range(len(self.tag)):
+            if self.tag[i] in self.tag_dict:
+                self.tag[i] = self.tag_dict[self.tag[i]]
+            print(self.tag[i])
 
     def return_data(self) -> Dict[str, Any]:
         if not self.optional_data["isIdiom"]:
@@ -144,10 +152,10 @@ class Formatter:
 if __name__ == "__main__":
     input_word_lst = [
         "content",
-        # "as well as",
-        # "rumor",
-        # "prior to",
-        # "pan",
+        "as well as",
+        "rumor",
+        "prior to",
+        "pan",
     ]
 
     ChromeDriver = Crawling()
