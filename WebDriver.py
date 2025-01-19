@@ -10,12 +10,13 @@ from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import WebDriverWait
 from typing import List, Dict, Tuple
 from webdriver_manager.chrome import ChromeDriverManager
-
+from bs4 import BeautifulSoup as bs
 
 class Crawling:
     def __init__(self) -> None:
         # initial target word
         self.word: str = ""
+        self.is_simple: bool = True
 
         try:
             # driver's options
@@ -32,16 +33,15 @@ class Crawling:
 
             # set intial page
             self.driver.get(url="https://en.dict.naver.com/#/main")
-        except SessionNotCreatedException as e:
-            print(
-                f"Chrome version may not be the latest version. Please update Chrome and try again.")
-            print(type(e))
         except Exception as e:
             print("Please try again later")
             print(type(e))
 
-    def set_word(self, word: str):
+    def set_word(self, word: str) -> None:
         self.word = word.lower()
+
+    def set_is_simple(self, is_simple: bool) -> None:
+        self.is_simple = is_simple
 
     def get_raw_data(self, searched_word_elem, searched_word_text: str) -> Tuple[List[str], List[str], Dict[str, bool]]:
         word_data: List[str] = [searched_word_text]
@@ -98,7 +98,15 @@ class Crawling:
             return (word_data, parts_of_speech_text_lst, type_dict)
 
     def search_word(self) -> Tuple[List[str], List[str], Dict[str, bool]]:
-        # ouput: ([영단어, 의미], [품사], {'isIdiom': bool, 'isPolysemy': bool, 'isError': bool})
+        # ouput: ([영단어, 의미], [품사], {'isIdiom': bool, 'is_polysemy': bool, 'isError': bool})
+        # {
+        #     영단어: string
+        #     의미: string
+        #     품사: string
+        #     is_idiom: bool
+        #     is_polysemy: bool
+        #     is_error: bool
+        # }
         word_data_lst: List[str] = []
 
         # enter the word in search box
@@ -108,9 +116,9 @@ class Crawling:
         search_box.send_keys(self.word)
         search_box.send_keys(Keys.RETURN)
 
-        isPolysemy: bool = True
+        is_polysemy: bool = True
         i: int = 0
-        while (isPolysemy):
+        while (is_polysemy):
             # find words in a result page after searching
             search_page_entry = WebDriverWait(self.driver, self.wait_time).until(
                 EC.presence_of_element_located((By.ID, "searchPage_entry")))
@@ -118,9 +126,12 @@ class Crawling:
                 By.CLASS_NAME, "row")
 
             # check the finding word is a polsemy(word with multiple meanings) or containing a sub-entry
-            if (i < len(searched_word_elems)):
-                curr_elem_text: str = searched_word_elems[i].text[:searched_word_elems[i].text.find(
-                    '\n')]
+            if (len(searched_word_elems) > 0):
+                # print(searched_word_elems[i].text)
+                # curr_elem_text: str = searched_word_elems[i].text[:searched_word_elems[i].text.find(
+                #     '\n')]
+                curr_elem_text: str = searched_word_elems[i].find_element(By.TAG_NAME, 'a').text
+                # print(curr_elem_text)
 
                 for j in range(len(self.word)):
                     # if curr elem text is not equal with self.word
@@ -128,10 +139,11 @@ class Crawling:
                         break
                 else:  # if curr elem text is equal with self.word
                     # if sup class "num" is existed: curr searched word is polsemy(word with multiple meanings)
+                    # 여기서부터 수정할 것
                     sup_num = searched_word_elems[i].find_elements(
                         By.TAG_NAME, "sup")
 
-                    isPolysemy = True if ((i < len(sup_num)) and
+                    is_polysemy = True if ((i < len(sup_num)) and
                                           (sup_num[0].text.strip() != "")) else False
 
                     curr_xpath: str = "//*[@id= \"searchPage_entry\"]/div/div[" + \
@@ -142,7 +154,7 @@ class Crawling:
 
                     if curr_elem:
                         data = self.get_raw_data(curr_elem, curr_elem_text)
-                        data[2]["isPolysemy"] = isPolysemy or i > 0
+                        data[2]["is_polysemy"] = is_polysemy or i > 0
                         data[2]["isError"] = False
                         word_data_lst.append(data)
 

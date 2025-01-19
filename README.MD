@@ -50,6 +50,15 @@
 17. 'stress out'과 같은 몇몇개의 숙어의 경우는 오픈 사전으로 넘어가서 네이버 사전과는 다른 html 구조이기 때문에 작동이 잘 되지 않는 것으로 보임.
 18. ~~'rumor'와 같은 발음이 표기되지 않은 단어들은 html에서 pronounce area 부분이 존재하지 않아 에러가 발생하는 것 같음.~~
 
+# TEMP
+1. 유저 인터페이스 -> 웹, HTML
+    1. CSS는 일단 생각하지 말고
+    1. 처리된 단어 묶음들을 안키드로이드 단어 공유 서버에 저장되게끔 해버리면 좋을 듯
+1. 크롤링, 스크래핑 봇
+    1. 셀레니움으로 전부 처리할 필요 없이 뷰티풀스프로 파싱하면 될 듯
+    1. 파싱한 데이터들을 한 번에 텍스트로 변환시키기 보다는 태그, 클래스로 구분하면 단어, 뜻, 품사 등등 구분하기 쉬울 듯
+1. 데이터 전처리
+
 # ankidroid에서 기타(깃발 태그) 의미
 1. flag-red: formatting 오류, 뜻 부분 중 하나 이상이 공란
 2. marked: 발음이 어렵다거나 뭐 그런 거
@@ -58,7 +67,8 @@
 # 프로그램 코드 개요
 ## import
 pip install selenium
-pip install ChromeDriverManager
+pip install selenium webdriver-manager
+pip install beautifulsoup4
 
 ## TUI.py
 1. init: text ui를 위한 변수들 초기화 함수
@@ -98,3 +108,7 @@ pip install ChromeDriverManager
 5. main
 ## StringManage.py
 ## WebDriver.py
+
+#
+em.part_speech: 명사
+span.part_speech_desc:  (pl. -ies)
