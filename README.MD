@@ -1,15 +1,40 @@
-# 프로그램 개요
-1. 사용자가 하나 이상의 영단어를 입력한다.  
-2. 입력받은 영단어들을 "네이버 영어사전"에 검색한 결과를 selenium을 통해 크롤링한다.
-3. 크롤링한 데이터를 전처리한다.
+# 서비스 개요
+1. 사용자가 하나 이상의 영단어를 입력한다.
+1. selenium과 beautiful soup를 이용해 입력받은 영단어들을 "네이버 영어사전"에 검색한 결과들을 크롤링/파싱한다.
+    1. 간단하게 요약된 검색 결과와 자세하게 풀어진 검색 결과
+1. 크롤링/파싱한 데이터를 전처리한다.
     1. 단어, 발음, 품사, 뜻, 예문 등
-    2. 이전까지는 그냥 발음 기호만 챙겨왔는데, 음원 파일도 챙겨오고 싶어짐.
+    1. + 음원 파일, 사진
         -> purl에 원어민 발음이 담겨져있음.
         -> 안키드로이드에서 발음 파일을 어떻게 들어가는 지 확인을 해야 함.
-3. 전처리한 데이터를 기준으로 txt 파일을 생성한되, 파일제목은 날짜를 기준으로 한다. ex) 20211222_영단어.txt  
+1. 전처리한 데이터를 기준으로 txt 파일을 생성한되, 파일제목은 날짜를 기준으로 한다. ex) 20211222_영단어.txt  
     1. 같은 이름의 파일이 있을 경우 기존 파일을 연다.
     2. format 형태는 csv 파일과 동일하게 하고, 순서는 차례대로 영단어, 발음, 뜻, 예문, 태그로 한다.
-    
+1. 안키드로이드 
+
+# 영어 품사
+1. 명사(Noun)
+    1. 가산명사(Countable Noun)
+    1. 불가산명사(Uncountable Noun)
+1. 대명사(Pronoun)
+    1. 인칭대명사
+    1. 지시대명사
+    1. 의문대명사
+    1. 부정대명사
+    1. 재귀대명사
+1. 동사(Verb)
+    1. 계사(Copula)
+    1. 조동사(Auxiliary Verb)
+1. 형용사(Adjective)
+1. 부사(Adverb)
+1. 전치사(Preposition)
+1. 접속사(Conjunction)
+1. 한정사(Determiner)
+    1. 관사(Article)
+1. 감탄사(Interjection)
+~~1. 수사(Numeral)~~
+~~1. 관계사(Relative)~~
+
 # 프로그램 수정사항 할 것들
 1. ~~tag 설정 관련~~
     1. ~~대명사와 명사 분류를 정확하게~~
@@ -64,51 +89,8 @@
 2. marked: 발음이 어렵다거나 뭐 그런 거
 3. 
 
-# 프로그램 코드 개요
+# 코드 개요
 ## import
 pip install selenium
 pip install selenium webdriver-manager
 pip install beautifulsoup4
-
-## TUI.py
-1. init: text ui를 위한 변수들 초기화 함수
-    `paramter: self`
-    `return: None`
-
-    `self.file_name: str` - 영단어 검색 결과 txt 파일(출력물) 이름
-    `self.file_path: str` - 출력물 저장 위치
-
-    `self.input_words: Set[str]` - 사용자로부터 입력받은 영단어들
-    `self.error_words: List[str]` - 프로그램 작동 도중 오류가 발생한 영단어들
-
-    `self.commands_info: Dict[str, str]` - 프로그램 명령어에 관한 정보들
-    `self.commands: List[str]` - 프로그램 명령어
-
-    `self.special_characters: List[str]` - 특수 문자들
-    `self.finish: bool` - 프로그램 종료
-
-    `self.driver` - 크롤링할 웹드라이버
-    `self.formatter` - 안키드로이드에 맞춘 포맷팅을 위한 포맷터
-2. file_write: 출력물(txt 파일) 작성 함수
-    `parameter: self, words_data: List[Dict]`
-    `return: None`
-
-    `mode: str` - 출력 방식, 덮어쓰기(wt), 덧붙이기(at)
-3. output: 프로그램에서 검색이 끝나고, text ui에 진행 과정을 보여주는 함수
-    `parameter: self`
-    `return: None`
-
-    `ChromeDriver` - 크롤링 웹드라이버
-    `word_data_lst: List[Dict[str, any]]` - 검색한 영단어들의 데이터 리스트
-
-    `extracted_word_lst: Tuple[List[str], List[str], Dict[str, bool]]` - 
-
-
-4. quit
-5. main
-## StringManage.py
-## WebDriver.py
-
-#
-em.part_speech: 명사
-span.part_speech_desc:  (pl. -ies)
