@@ -25,18 +25,16 @@ class Formatter:
     optional_data: Dict[str, bool] = None
     tag: List[str] = None
 
-    def __init__(self, word_data: Tuple[List[str], List[str], Dict[str, bool]]) -> None:
-        # word_data: ([영단어, 의미], [품사], {'isIdiom': bool, 'isPolysemy': bool, 'isError': bool})
-        if not word_data[2]["isError"]:
-            self.word = word_data[0][0]
-            if not word_data[2]["isIdiom"]:
-                self.pronounce = word_data[0][1]
-            self.meaning = word_data[0][1] if word_data[
-                2]["isIdiom"] else word_data[0][2]
-            self.optional_data = word_data[2]
-            self.tag = word_data[1]
-        else:
-            raise Exception
+    def __init__(self, word_data: Dict[str, any]):
+        self.word = word_data["word"]
+        self.pronounce = word_data.get("pronounce", "")
+        self.meaning = word_data.get("meaning", "")
+        self.tag = word_data.get("parts_of_speech", [])
+        self.optional_data = {
+            "isIdiom": word_data.get("is_idiom", False),
+            "is_polysemy": word_data.get("is_polysemy", False),
+            "isError": word_data.get("is_error", True),
+        }
 
     def replace_broken_char(self):
         pass
