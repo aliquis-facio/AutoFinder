@@ -1,6 +1,6 @@
 # 크롬 드라이버 기본 모듈
 from selenium import webdriver
-from selenium.common.exceptions import *
+from selenium.common.exceptions import * # type: ignore
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.common.keys import Keys
@@ -28,7 +28,7 @@ class Crawler:
         # 1. 브라우저 꺼짐 방지 옵션
         self.driver_options.add_experimental_option("excludeSwitches", ["enable-logging"])
         # 2. 크롬 드라이버가 조작하는 브라우저 안 보임 설정
-        self.driver_options.add_argument("headless")
+        # self.driver_options.add_argument("headless")
         # 3. 크롬 드라이버 대기 시간
         self.wait_time: int = 5  # sec
         # 4. 크롬 드라이버 최신 버전 설정
@@ -116,17 +116,19 @@ class Crawler:
 
         # 메인 검색 결과
         try:
-            WebDriverWait(self.driver, self.wait_time).until(
+            revisionSearchPage = WebDriverWait(self.driver, self.wait_time).until(
                 EC.presence_of_element_located(
-                    (By.CSS_SELECTOR, "#revisionSearchPage_entry")
+                    (By.ID, "revisionSearchPage_entry")
                 )
             )
 
-            entry_soup: bs = bs(self.driver.page_source, "html.parser")
-            a_tag: Tag | None = entry_soup.select_one("#revisionSearchPage_entry > div > div.row > div.origin > a")
-            href: str = self._get_href(a_tag)
-            if href:
-                entry_links.append(href)
+            revisionSearchPage_entry = revisionSearchPage.get_attribute("innerHTML")
+            if revisionSearchPage_entry:
+                entry_soup: bs = bs(revisionSearchPage_entry, "html.parser")
+                a_tag: Tag | None = entry_soup.select_one("div > div.row > div.origin > a")
+                href: str = self._get_href(a_tag)
+                if href:
+                    entry_links.append(href)
         except:
             pass
         
@@ -164,24 +166,28 @@ class Crawler:
                 if href:
                     entry_links.append(href)
 
-            # 각 엔트리 상세 페이지로 이동해서 #content HTML 추출
-            for entry_link in entry_links:
-                # 상세 페이지로 이동
-                self.driver.get(entry_link)
+        # 각 엔트리 상세 페이지로 이동해서 #content HTML 추출
+        for entry_link in entry_links:
+            # 상세 페이지로 이동
+            self.driver.get(entry_link)
 
-                # 뜻 영역이 뜰 때까지 대기
+            # 뜻 영역이 뜰 때까지 대기
+            self._wait_document_complete()
+            try:
                 content: WebElement = WebDriverWait(self.driver, self.wait_time).until(
-                    EC.presence_of_element_located((By.ID, "content"))
+                    EC.presence_of_element_located((By.CSS_SELECTOR, "#content > div.article > div.section > div > div.mean_tray"))
                 )
-
+                
                 res_html = content.get_attribute("innerHTML")
                 if res_html:
                     soup: bs = bs(res_html, "html.parser")
                     html_lst.append(soup.prettify())
-
-                # 추출 후 검색 페이지로 복귀
-                self.driver.get("https://en.dict.naver.com/#/search?range=all&query=" + word)
-                self._wait_document_complete()
+            except:
+                pass
+            
+            # 추출 후 검색 페이지로 복귀
+            self.driver.get("https://en.dict.naver.com/#/search?range=all&query=" + word)
+            self._wait_document_complete()
         
         return html_lst
 
@@ -201,9 +207,11 @@ if __name__ == "__main__":
     crawler = Crawler()
     
     for word in input_words:
-        result_html_lst = crawler.search_from_naver(word)
+        print(word)
+        htmls = crawler.search_from_naver(word)
 
-        for html in result_html_lst:
+        print(len(htmls))
+        for html in htmls:
             print(html.splitlines()[:10])
             print("--- --- ---")
 
