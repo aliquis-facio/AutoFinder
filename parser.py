@@ -6,6 +6,9 @@ import re
 from crawler import Crawler
 
 class Parser:
+    def __init__(self, html: str) -> None:
+        self.soup: bs = bs(html, 'html.parser')
+
     def clean_text(self, raw_text: str, way: int = 1) -> str:
         clean_text: str = ""
         
@@ -19,7 +22,60 @@ class Parser:
 
         return clean_text.strip()
     
-    def get_detailed_data(self, html: str) -> Dict[str, Any]:
+    def _get_pronounce_from_naver(self):
+        # 발음 기호
+        pronounce_area: Tag | None = self.soup.select_one("div.section > div > div.entry_pronounce > div.pronounce_area")
+        if pronounce_area:
+            pronounce_items: List[Tag] | None = pronounce_area.select("div.pronounce_item")
+            pronounce_item_texts = []
+            for pronounce_item in pronounce_items:
+                span_tags = pronounce_item.select("span")
+                if span_tags:
+                    pronounce_item_texts.append([span_tag.text.strip() for span_tag in span_tags])
+            return pronounce_item_texts
+        return pronounce_area
+        
+    def _get_conjugation_from_naver(self) -> Tag | None:
+        # 부표제어 (발음 기호)
+        conjugation: Tag | None = self.soup.select_one("div.section > div > div.entry_infos > dl.entry_conjugation > dd > div")
+        if conjugation:
+            items = conjugation.select("div.item")
+
+        return conjugation
+
+    def _get_mean_from_naver(self) -> Tag | None:
+        # 뜻
+        mean: Tag | None = self.soup.select_one("div.article > div > div")
+
+        return mean
+    
+    def _get_image_from_naver(self) -> List[str] | None:
+        # 이미지
+        image_urls: List[str] = []
+        
+        images: List[Tag] | None = self.soup.select("div.thumb")
+        if images:
+            for image in images:
+                if image:
+                    raw_style = image.get("style")  # 타입: _AttributeValue | None
+
+                    # 타입 정리
+                    if isinstance(raw_style, list):
+                        style_attr: str = " ".join(raw_style)
+                    elif isinstance(raw_style, str):
+                        style_attr = raw_style
+                    else:
+                        style_attr = ""
+
+                    # 정규식 검색
+                    match: Optional[re.Match[str]] = re.search(r"url\(['\"]?(.*?)['\"]?\)", style_attr)
+                    if match:
+                        image_url: str = match.group(1)
+                        image_urls.append(image_url)
+
+        return image_urls
+
+    def get_detailed_data_from_naver(self, html: str) -> Dict[str, Any]:
         data = {
             "pronounce": "",
             "conjugation": "", # (동사의) 활용
@@ -32,17 +88,9 @@ class Parser:
 
         # 발음 기호
         pronounce_items = soup.select("div.component_keyword > div.row > div.listen_global_area > div.pronounce_area")
-        for item in pronounce_items:
-            if item:
-                pronounce_item_text:str = self.clean_text(item.text)
-                data["pronounce"] += f"## pronounce\n"
-                data["pronounce"] += f"{pronounce_item_text}\n"
 
-        conjugation = soup.find("dl", {"class": "entry_conjugation"}) # 활용 (부표제어 및 발음)
-        if conjugation:
-            conjugation_text: str = self.clean_text(conjugation.text, way=0)
-            data["conjugation"] += f"## conjugation\n"
-            data["conjugation"] += f"{conjugation_text}\n"
+        # 활용 (부표제어 및 발음)
+        conjugation = soup.find("dl", {"class": "entry_conjugation"})
 
         part_area: List = soup.find_all("div", {"class": "part_area"}) # 품사 분류
         mean_list: List = soup.select("#content > div.article > div.section > div > div.mean_tray > ul") # 품사별 의미 목록
@@ -123,7 +171,7 @@ if __name__ == "__main__":
     input_words = [
         "water",
         "pace",
-        "inquire",
+        "enquire",
         "bark",
         "bat",
         "row",
@@ -132,13 +180,12 @@ if __name__ == "__main__":
     result_lst = []
     crawler = Crawler()
     for word in input_words:
-        result = crawler.search_from_naver(word)
-        result_lst.append(result)
-    
-    parser = Parser()
-    for htmls in result_lst:
-        print("--- --- ---")
+        print(word)
+        htmls = crawler.search_from_naver(word)
+        print(len(htmls))
         for html in htmls:
-            parsed_data = parser.get_detailed_data(html)
-            print(parsed_data)
+            parser = Parser(html)
+            pronounce = parser._get_pronounce_from_naver()
+            print(pronounce)
+            print("--- --- ---")
             print()
