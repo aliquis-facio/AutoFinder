@@ -1,7 +1,7 @@
 from typing import List, Dict, Any, Optional
 from bs4 import BeautifulSoup as bs
 from bs4.element import Tag
-import re
+import re, requests
 
 from crawler import Crawler
 
@@ -9,6 +9,9 @@ class Parser:
     def __init__(self, html: str) -> None:
         self.soup: bs = bs(html, 'html.parser')
 
+    def _pretty_html(self):
+        return self.soup.prettify()
+    
     def clean_text(self, raw_text: str, way: int = 1) -> str:
         clean_text: str = ""
         
@@ -22,22 +25,35 @@ class Parser:
 
         return clean_text.strip()
     
-    def _get_pronounce_from_naver(self):
+    def _get_pronounce_from_naver(self) -> List[str] | None:
         # 발음 기호
-        pronounce_area: Tag | None = self.soup.select_one("div.section > div > div.entry_pronounce > div.pronounce_area")
-        if pronounce_area:
-            pronounce_items: List[Tag] | None = pronounce_area.select("div.pronounce_item")
-            pronounce_item_texts = []
-            for pronounce_item in pronounce_items:
-                span_tags = pronounce_item.select("span")
-                if span_tags:
-                    pronounce_item_texts.append([span_tag.text.strip() for span_tag in span_tags])
-            return pronounce_item_texts
-        return pronounce_area
+        pronounce_area_pos = [
+            "#revisionSearchPage_entry > div > div.row > div.listen_global_area > div.pronounce_area",
+            "#content > div.section > div > div.entry_pronounce",
+            "div.pronounce_area"
+            ]
+        
+        pronounce_area: Tag | None = None
+        for pos in pronounce_area_pos:
+            pronounce_area = self.soup.select_one(pos)
+            if pronounce_area: break
+        else: return pronounce_area # type: ignore
+
+        pronounce_items: List[Tag] | None = pronounce_area.select("div.pronounce_item")
+        result: List[str] = []
+        for pronounce_item in pronounce_items:
+            pronounce_item_text: str = ""
+            for text in pronounce_item.text.split("\n"):
+                stripped_text = text.strip()
+                if stripped_text:
+                    pronounce_item_text += stripped_text
+            result.append(pronounce_item_text)
+        
+        return result
         
     def _get_conjugation_from_naver(self) -> Tag | None:
         # 부표제어 (발음 기호)
-        conjugation: Tag | None = self.soup.select_one("div.section > div > div.entry_infos > dl.entry_conjugation > dd > div")
+        conjugation: Tag | None = self.soup.select_one("#content > div.section.section_entry._section_entry > div > div.entry_infos.my_entry_infos > dl.entry_conjugation > dd > div")
         if conjugation:
             items = conjugation.select("div.item")
 
@@ -179,13 +195,21 @@ if __name__ == "__main__":
 
     result_lst = []
     crawler = Crawler()
+
     for word in input_words:
-        print(word)
+        print(f"word: {word}")
+
         htmls = crawler.search_from_naver(word)
-        print(len(htmls))
+        print(f"len(htmls): {len(htmls)}")
+
         for html in htmls:
             parser = Parser(html)
+            # print(parser._pretty_html())
             pronounce = parser._get_pronounce_from_naver()
-            print(pronounce)
+            input("wait")
+
+            print(f"pronounce: {pronounce}")
             print("--- --- ---")
             print()
+
+    crawler.driver_close()

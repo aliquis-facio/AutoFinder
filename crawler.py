@@ -167,15 +167,22 @@ class Crawler:
                     entry_links.append(href)
 
         # 각 엔트리 상세 페이지로 이동해서 #content HTML 추출
+        print(f"len(entry_links): {len(entry_links)}")
         for entry_link in entry_links:
             # 상세 페이지로 이동
             self.driver.get(entry_link)
 
             # 뜻 영역이 뜰 때까지 대기
-            self._wait_document_complete()
+            try:
+                mean_area: WebElement = WebDriverWait(self.driver, self.wait_time).until(
+                    EC.presence_of_element_located((By.CSS_SELECTOR, "#allMeanGroups"))
+                )
+            except:
+                pass
+
             try:
                 content: WebElement = WebDriverWait(self.driver, self.wait_time).until(
-                    EC.presence_of_element_located((By.CSS_SELECTOR, "#content > div.article > div.section > div > div.mean_tray"))
+                    EC.presence_of_element_located((By.CSS_SELECTOR, "#content"))
                 )
                 
                 res_html = content.get_attribute("innerHTML")
@@ -207,12 +214,9 @@ if __name__ == "__main__":
     crawler = Crawler()
     
     for word in input_words:
-        print(word)
-        htmls = crawler.search_from_naver(word)
+        print(f"word: {word}")
 
-        print(len(htmls))
-        for html in htmls:
-            print(html.splitlines()[:10])
-            print("--- --- ---")
+        htmls = crawler.search_from_naver(word)
+        print(f"len(htmls): {len(htmls)}")
 
     crawler.driver_close()
