@@ -218,7 +218,7 @@ class Crawler:
                 pass
             
             # 추출 후 검색 페이지로 복귀
-            self.driver.get("https://en.dict.naver.com/#/search?range=all&query=" + q)
+            self.driver.get("https://en.dict.naver.com/#/search?range=all&query=" + quote(q))
             self._wait_document_complete()
         
         return html_lst

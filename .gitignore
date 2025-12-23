@@ -1,3 +1,7 @@
 __pycache__/
 .venv/
 .vscode/
+PKG-INFO
+SOURCES.txt
+top_level.txt
+dependency_links.txt

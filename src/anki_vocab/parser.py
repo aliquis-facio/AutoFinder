@@ -13,10 +13,20 @@ class PronItem(TypedDict, total=False):
     ipa_text: str          # "[|wɔːtə(r)]" 같이 정규화
 
 class Parser:
-    def __init__(self, html: str) -> None:
-        self.soup: bs = bs(html, 'html.parser')
+    def __init__(self) -> None:
+        self.soup: bs = bs("", 'html.parser')
+    
+    def set_html(self, html: str) -> "Parser":
+        """
+        HTML을 나중에 주입하는 setter.
+        - soup를 새로 만들고
+        - sanitize를 적용
+        - chaining 가능하도록 self 반환
+        """
+        self.soup = bs(html or "", "html.parser")
         self._sanitize(self.soup)
-            
+        return self
+    
     def _norm(self, s: str) -> str:
         return re.sub(r"\s+", " ", s).strip()
     
@@ -542,6 +552,7 @@ class Parser:
             "entries": self.parse_entries(),   # part_of_speech + senses(...)
             "images": self.parse_image() or [],
             "meta": {
+                "homonym": "",
                 "source": "naver",
                 "parsed_at": datetime.now().astimezone().isoformat(timespec="seconds"),
             },

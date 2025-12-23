@@ -4,7 +4,7 @@ from pathlib import Path
 from anki_vocab.parser import Parser
 
 
-FIXTURE_DIR = Path("tests/fixtures/naver")
+FIXTURE_DIR = Path("tests/fixtures/html/naver")
 EXPECTED_DIR = Path("tests/expected")
 
 def load_text(p: Path) -> str:
