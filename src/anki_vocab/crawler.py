@@ -19,6 +19,8 @@ from bs4.element import Tag
 
 # 기타
 from typing import List
+from urllib.parse import quote
+import re
 
 
 class Crawler:
@@ -53,21 +55,39 @@ class Crawler:
         href: str = ""
         if a_tag:
             raw_href = a_tag.get("href")
-
             if isinstance(raw_href, list):
-                # 혹시 리스트로 올 경우 대비
-                href = " ".join(raw_href)
+                href = " ".join(raw_href).strip()
             elif isinstance(raw_href, str):
                 href = raw_href.strip()
-            else:
-                href = ""
 
-        if href:
-            # 네이버 href는 '#/entry/...' 형태
-            href = "https://en.dict.naver.com/" + href
+        if not href:
+            return ""
 
-        return href     
-        
+        # 이미 절대 URL이면 그대로
+        if href.startswith("http://") or href.startswith("https://"):
+            return href
+
+        # 네이버 사전은 보통 '#/entry/...' 또는 '/...' 형태가 나올 수 있음
+        if href.startswith("#/"):
+            return "https://en.dict.naver.com/" + href
+        if href.startswith("/"):
+            return "https://en.dict.naver.com" + href
+
+        # 기타 상대경로 방어
+        return "https://en.dict.naver.com/" + href
+    
+    def _normalize_query(self, word: str) -> str:
+        if word is None:
+            return ""
+        if not isinstance(word, str):
+            raise TypeError(f"word must be str, got {type(word)}")
+        q = word.strip()
+        if not q:
+            return ""
+        # 연속 공백 정리: "look   up" -> "look up"
+        q = re.sub(r"\s+", " ", q)
+        return q
+    
     def search_from_naver(self, word: str) -> List[str]:
         """
         Docstring for search_from_naver
@@ -78,6 +98,10 @@ class Crawler:
         :return: html 배열
         :rtype: List[str]
         """
+        q: str = self._normalize_query(word)
+        if q == "":
+            # 빈 입력은 Selenium을 타면 안 됨
+            return []
 
         # return 값 초기화
         html_lst: List[str] = []
@@ -86,95 +110,96 @@ class Crawler:
         self.driver.get(url="https://en.dict.naver.com/#/main")
 
         # 검색
-        search_box = WebDriverWait(self.driver, self.wait_time).until(
+        search_box: WebElement = WebDriverWait(self.driver, self.wait_time).until(
             EC.presence_of_element_located((By.NAME, "query"))
         )
         search_box.clear()
-        search_box.send_keys(word)
+        search_box.send_keys(q)
         search_box.send_keys(Keys.RETURN)
-        
-        """
-        최종 수정: 2025.11.26
-        네이버 영어 사전 검색 결과 html 구조:
-        revisionSearchPage_entry에 가장 유사도가 높은 단어와 함께 뜻이 포함되어 있음
-        이 밑에 searchPage_entry에 동음이의어/다의어, 숙어 등 그 외 검색 결과가 존재
-        """
 
         # 레벨: 초급, 중급, 전체 -> 전체 선택
         try:
-            select_level_all_button: WebElement = WebDriverWait(self.driver, self.wait_time).until(
-                EC.presence_of_element_located(
-                    (By.CSS_SELECTOR, "#level_all")
-                )
+            level_all: WebElement = WebDriverWait(self.driver, self.wait_time).until(
+                EC.element_to_be_clickable((By.CSS_SELECTOR, "#level_all"))
             )
-            select_level_all_button.click()
+            level_all.click()
         except:
             pass
         
-        # 파싱할 링크 배열 초기화
+        # 링크 배열 초기화
         entry_links: List[str] = []
 
-        # 메인 검색 결과
+        # 메인 검색 결과(revisionSearchPage_entry)에서 링크 1개 추출
         try:
-            revisionSearchPage = WebDriverWait(self.driver, self.wait_time).until(
-                EC.presence_of_element_located(
-                    (By.ID, "revisionSearchPage_entry")
-                )
+            revision_el: WebElement = WebDriverWait(self.driver, self.wait_time).until(
+                EC.presence_of_element_located((By.ID, "revisionSearchPage_entry"))
             )
 
-            revisionSearchPage_entry = revisionSearchPage.get_attribute("innerHTML")
-            if revisionSearchPage_entry:
-                entry_soup: bs = bs(revisionSearchPage_entry, "html.parser")
-                a_tag: Tag | None = entry_soup.select_one("div > div.row > div.origin > a")
+            revision_html: str | None = revision_el.get_attribute("innerHTML")
+            if revision_html:
+                revision_soup: bs = bs(revision_html, "html.parser")
+                a_tag: Tag | None = revision_soup.select_one("div > div.row > div.origin > a")
                 href: str = self._get_href(a_tag)
                 if href:
                     entry_links.append(href)
         except:
             pass
         
-        # BeautifulSoup으로 component_keyword 내부 HTML 가져와서 sup(동음이의어 번호) 파싱
-        component_keyword: WebElement = WebDriverWait(self.driver, self.wait_time).until(
-            EC.presence_of_element_located(
-                (By.CSS_SELECTOR, "#searchPage_entry > div")
+        # 일반 검색 결과(searchPage_entry)에서 링크들 추출
+        try:
+            # BeautifulSoup으로 component_keyword 내부 HTML 가져와서 sup(동음이의어 번호) 파싱
+            component_keyword: WebElement = WebDriverWait(self.driver, self.wait_time).until(
+                EC.presence_of_element_located((By.CSS_SELECTOR, "#searchPage_entry > div"))
             )
-        )
+            entry_html: str | None = component_keyword.get_attribute("innerHTML")
 
-        entry_html: str | None = component_keyword.get_attribute("innerHTML")
+            if entry_html:
+                entry_soup = bs(entry_html, "html.parser")
 
-        if entry_html:
-            entry_soup = bs(entry_html, "html.parser")
+                # sup 기반 동음이의어 개수 계산
+                sup_tags = entry_soup.select("div.row > div.origin > a > sup.num")
+                homonym_numbers = set()
+                for sup in sup_tags:
+                    num_text = sup.get_text(strip=True)
+                    if num_text.isdigit():
+                        homonym_numbers.add(int(num_text))
 
-            # sup 기반 동음이의어 개수 계산
-            sup_tags = entry_soup.select("div.row > div.origin > a > sup.num")
+                # 메인 검색 결과 내용이 없는 경우 최소 하나의 링크는 가져올 수 있도록 설정
+                loop: int = len(homonym_numbers) if len(entry_links) > 0 else 1
+                for i in range(loop):
+                    a_tag = entry_soup.select_one("div.row > div.origin > a.link")
+                    if not a_tag:
+                        continue
 
-            homonym_numbers = set()
-            for sup in sup_tags:
-                num_text = sup.get_text(strip=True)
-                if num_text.isdigit():
-                    homonym_numbers.add(int(num_text))
+                    href = self._get_href(a_tag)
+                    if href:
+                        entry_links.append(href)
+        except TimeoutException:
+            return []
+        except Exception:
+            pass
+        
+        # 중복 제거(순서 유지)
+        dedup: List[str] = []
+        seen = set()
+        for link in entry_links:
+            if link not in seen:
+                seen.add(link)
+                dedup.append(link)
+        entry_links = dedup
 
-            # 메인 검색 결과 내용이 없는 경우 최소 하나의 링크는 가져올 수 있도록 설정
-            loop: int = len(homonym_numbers) if len(entry_links) > 0 else 1
-
-            # 동음이의어 개수 or 1 개의 row에서 링크 추출
-            for i in range(loop):
-                a_tag = entry_soup.select_one("div.row > div.origin > a.link")
-                if not a_tag:
-                    continue
-
-                href = self._get_href(a_tag)
-                if href:
-                    entry_links.append(href)
-
+        if not entry_links:
+            return []
+        
         # 각 엔트리 상세 페이지로 이동해서 #content HTML 추출
-        print(f"len(entry_links): {len(entry_links)}")
+        # print(f"len(entry_links): {len(entry_links)}") # 디버깅용
         for entry_link in entry_links:
             # 상세 페이지로 이동
             self.driver.get(entry_link)
 
-            # 뜻 영역이 뜰 때까지 대기
+            # 뜻 영역 대기
             try:
-                mean_area: WebElement = WebDriverWait(self.driver, self.wait_time).until(
+                WebDriverWait(self.driver, self.wait_time).until(
                     EC.presence_of_element_located((By.CSS_SELECTOR, "#allMeanGroups"))
                 )
             except:
@@ -193,30 +218,10 @@ class Crawler:
                 pass
             
             # 추출 후 검색 페이지로 복귀
-            self.driver.get("https://en.dict.naver.com/#/search?range=all&query=" + word)
+            self.driver.get("https://en.dict.naver.com/#/search?range=all&query=" + q)
             self._wait_document_complete()
         
         return html_lst
 
     def driver_close(self) -> None:
         self.driver.quit() # close every browser
-
-if __name__ == "__main__":
-    input_words = [
-        "water",
-        "pace",
-        "inquire",
-        "bark",
-        "bat",
-        "row",
-    ]
-
-    crawler = Crawler()
-    
-    for word in input_words:
-        print(f"word: {word}")
-
-        htmls = crawler.search_from_naver(word)
-        print(f"len(htmls): {len(htmls)}")
-
-    crawler.driver_close()
