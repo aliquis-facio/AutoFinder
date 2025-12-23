@@ -13,3 +13,31 @@
     2. format 형태는 csv 파일과 동일하게 하고, 순서는 차례대로 영단어, 발음, 뜻, 태그로 한다.
 
 selenium 같은 크롤러를 코딩할 때는 봇으로 동작하는 크롬이랑 내가 만지는 크롬이랑 페이지 화면이 다를 수 있으니까 꼭 확인하면서 코딩하기!!!
+
+.
+├─ README.md
+├─ .gitignore
+├─ pyproject.toml              # (권장) 없으면 requirements.txt로 시작해도 됨
+├─ pytest.ini                  # tests/가 아니라 루트로 이동 권장
+├─ src/
+│  └─ anki_vocab/              # 패키지명(원하는 이름으로 변경 가능)
+│     ├─ __init__.py
+│     ├─ crawler.py
+│     ├─ parser.py
+│     ├─ formatter.py
+│     ├─ file_handler.py
+│     ├─ tui.py                # CLI/TUI 진입점이면 cli.py로 바꿔도 좋음
+│     └─ word_entry.py
+└─ tests/
+   ├─ conftest.py              # 공용 fixture, 헬퍼
+   ├─ fixtures/
+   │  └─ html/
+   │     └─ naver/             # 크롤링 결과 HTML 샘플 보관
+   ├─ expected/
+   │  ├─ parser/               # parser 기대 JSON
+   │  └─ formatter/            # formatter 기대 출력(텍스트/CSV 등)
+   ├─ unit/
+   │  ├─ test_parser.py
+   │  └─ test_formatter.py
+   └─ integration/
+      └─ test_crawler.py       # selenium/네트워크 의존
