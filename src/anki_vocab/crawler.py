@@ -20,7 +20,7 @@ from bs4.element import Tag
 # 기타
 from typing import List
 from urllib.parse import quote
-import re
+import re, time
 
 
 class Crawler:
@@ -30,7 +30,7 @@ class Crawler:
         # 1. 브라우저 꺼짐 방지 옵션
         self.driver_options.add_experimental_option("excludeSwitches", ["enable-logging"])
         # 2. 크롬 드라이버가 조작하는 브라우저 안 보임 설정
-        # self.driver_options.add_argument("headless")
+        self.driver_options.add_argument("headless")
         # 3. 크롬 드라이버 대기 시간
         self.wait_time: int = 5  # sec
         # 4. 크롬 드라이버 최신 버전 설정
@@ -88,6 +88,20 @@ class Crawler:
         q = re.sub(r"\s+", " ", q)
         return q
     
+    def _expand_all_more(self):
+        btns = self.driver.find_elements(
+            By.CSS_SELECTOR,
+            "dl.entry_conjugation_list a.btn_more, dl.entry_conjugation a.btn_more"
+        )
+
+        for b in btns:
+            try:
+                if b.is_displayed() and b.is_enabled():
+                    self.driver.execute_script("arguments[0].click();", b)
+                    time.sleep(0.2)  # DOM 갱신 여유
+            except Exception:
+                pass
+
     def search_from_naver(self, word: str) -> List[str]:
         """
         Docstring for search_from_naver
@@ -129,7 +143,7 @@ class Crawler:
         # 링크 배열 초기화
         entry_links: List[str] = []
 
-        # 메인 검색 결과(revisionSearchPage_entry)에서 링크 1개 추출
+        # 메인 검색 결과(revisionSearchPage_entry)에서 링크 추출
         try:
             revision_el: WebElement = WebDriverWait(self.driver, self.wait_time).until(
                 EC.presence_of_element_located((By.ID, "revisionSearchPage_entry"))
@@ -139,11 +153,10 @@ class Crawler:
             if revision_html:
                 revision_soup: bs = bs(revision_html, "html.parser")
                 a_tag: Tag | None = revision_soup.select_one("div > div.row > div.origin > a")
-                href: str = self._get_href(a_tag)
-                if href:
-                    entry_links.append(href)
+                href: str = self._get_href(a_tag) if a_tag != None else ""
+                entry_links.append(href)
         except:
-            pass
+            return []
         
         # 일반 검색 결과(searchPage_entry)에서 링크들 추출
         try:
@@ -167,12 +180,11 @@ class Crawler:
                 # 메인 검색 결과 내용이 없는 경우 최소 하나의 링크는 가져올 수 있도록 설정
                 loop: int = len(homonym_numbers) if len(entry_links) > 0 else 1
                 for i in range(loop):
-                    a_tag = entry_soup.select_one("div.row > div.origin > a.link")
+                    a_tag: Tag | None = entry_soup.select_one("div.row > div.origin > a.link")
                     if not a_tag:
                         continue
-
-                    href = self._get_href(a_tag)
-                    if href:
+                    else:
+                        href: str = self._get_href(a_tag)
                         entry_links.append(href)
         except TimeoutException:
             return []
@@ -204,7 +216,7 @@ class Crawler:
                 )
             except:
                 pass
-
+            
             try:
                 content: WebElement = WebDriverWait(self.driver, self.wait_time).until(
                     EC.presence_of_element_located((By.CSS_SELECTOR, "#content"))

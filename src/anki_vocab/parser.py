@@ -85,8 +85,8 @@ class Parser:
             c.extract()
 
         # style 속성에 display:none 이 들어간 모든 태그 제거
-        for t in root.find_all(self._is_display_none):
-            t.decompose()
+        # for t in root.find_all(self._is_display_none):
+        #     t.decompose()
 
         # 불필요 태그 제거 (원하면 추가)
         for t in root.select("script, style, noscript"):

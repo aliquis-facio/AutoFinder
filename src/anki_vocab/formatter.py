@@ -1,10 +1,8 @@
 from __future__ import annotations
 
-from anki_vocab.word_entry import WordEntry
 from bs4 import BeautifulSoup
-from typing import Any, Dict, List, Optional, Set
-import html
-import re
+from typing import Any, Dict, List, Optional, Set, Tuple
+import html, re
 
 
 class Formatter:
@@ -66,98 +64,11 @@ class Formatter:
     def _as_str(self, v: Any) -> str:
         return v if isinstance(v, str) else (str(v) if v is not None else "")
 
-    def _join_br(self, lines: List[str]) -> str:
-        cleaned: List[str] = []
-        for x in lines:
-            s = (x or "").strip()
-            if s:
-                cleaned.append(s)
-        return "<br>".join(cleaned)
-
     def _norm_pos(self, pos: str) -> str:
         pos = (pos or "").strip()
         if not pos:
             return ""
         return self.pos_en_to_ko.get(pos, pos)
-    
-    def _safe_class(self, name: str) -> str:
-        # class로 쓰기 애매한 문자는 '_'로 치환
-        return self._class_re.sub("_", name).strip("_") or "_"
-
-    def _format_node(
-        self,
-        obj: Any,
-        *,
-        join_with: str,
-        item_wrap_class: Optional[str],
-        ol_keys: Set[str],
-        ol_item_class: str,
-    ) -> str:
-        # dict: key를 class로 하는 span (단, ol_keys는 ol로)
-        if isinstance(obj, dict):
-            parts: List[str] = []
-            for k, v in obj.items():
-                key_raw = str(k)
-                key_cls = html.escape(self._safe_class(key_raw), quote=True)
-
-                # part_of_speech 영문 → 한글 정규화
-                if key_raw == "part_of_speech" and isinstance(v, str):
-                    v = self._norm_pos_text(v)
-
-                # senses: <ol class="senses"><li class="sense">...</li>...</ol>
-                if key_raw in ol_keys and isinstance(v, list):
-                    lis: List[str] = []
-                    for x in v:
-                        inner = self._format_node(
-                            x,
-                            join_with=join_with,
-                            item_wrap_class=item_wrap_class,
-                            ol_keys=ol_keys,
-                            ol_item_class=ol_item_class,
-                        )
-                        if inner.strip():
-                            li_cls = html.escape(self._safe_class(ol_item_class), quote=True)
-                            lis.append(f'<li class="{li_cls}">{inner}</li>')
-                    parts.append(f'<ol class="{key_cls}">' + "".join(lis) + "</ol>")
-                    continue
-
-                # 기본: <span class="{key}">...</span>
-                inner = self._format_node(
-                    v,
-                    join_with=join_with,
-                    item_wrap_class=item_wrap_class,
-                    ol_keys=ol_keys,
-                    ol_item_class=ol_item_class,
-                )
-                parts.append(f'<span class="{key_cls}">{inner}</span>')
-
-            return join_with.join([p for p in parts if p])
-
-        # list: 각 원소 렌더 후 join (필요 시 __item 래핑)
-        if isinstance(obj, list):
-            items: List[str] = []
-            for x in obj:
-                inner = self._format_node(
-                    x,
-                    join_with=join_with,
-                    item_wrap_class=item_wrap_class,
-                    ol_keys=ol_keys,
-                    ol_item_class=ol_item_class,
-                )
-                if not inner.strip():
-                    continue
-
-                if item_wrap_class:
-                    cls = html.escape(self._safe_class(item_wrap_class), quote=True)
-                    items.append(f'<span class="{cls}">{inner}</span>')
-                else:
-                    items.append(inner)
-
-            return join_with.join(items)
-
-        # scalar
-        s = "" if obj is None else str(obj)
-        return html.escape(s)
     
     def _norm_pos_text(self, s: str) -> str:
         """
@@ -180,7 +91,13 @@ class Formatter:
                 if nxt in ("", " ", "(", ":", "-", "·", "∙"):
                     return ko + s[len(en):]
         return s
-
+    
+    def _norm_form_text(self, s: Any) -> str:
+        t = self._as_str(s).strip()
+        if not t:
+            return ""
+        return t.replace("|", "'")
+    
     def _pos_head_ko(self, pos_raw: str) -> str:
         """
         part_of_speech에서 '첫 토큰(품사)'만 뽑아 한글로 정규화.
@@ -195,6 +112,10 @@ class Formatter:
 
         head = re.split(r"\s|\(", s, 1)[0].strip()
         return self.pos_en_to_ko.get(head, head)
+    
+    def _safe_class(self, name: str) -> str:
+        # class로 쓰기 애매한 문자는 '_'로 치환
+        return self._class_re.sub("_", name).strip("_") or "_"
     
     def pretty_html(self, html_text: str, *, parser: str = "html.parser") -> str:
         """
@@ -224,26 +145,274 @@ class Formatter:
 
         return join_with.join([x for x in parts if x])
 
+    def _iter_conj_pairs_from_obj(self, obj: Any) -> List[Tuple[str, str]]:
+        """
+        conjugations/inflections를 (label, value) 쌍으로 표준화.
+        지원 형태 예)
+        - {"past":"made", "pp":"made", "ing":"making"}
+        - [{"type":"past", "form":"made"}, ...]
+        - [{"label":"과거", "value":"made"}, ...]
+        - ["made", "making"]  (라벨 없이)
+        """
+        pairs: List[Tuple[str, str]] = []
+
+        if isinstance(obj, dict):
+            for k, v in obj.items():
+                label = self._as_str(k).strip()
+                if isinstance(v, list):
+                    vs = [self._norm_form_text(x) for x in v]
+                    val = ", ".join([x for x in vs if x])
+                else:
+                    val = self._norm_form_text(v)
+                if val:
+                    pairs.append((label, val))
+            return pairs
+
+        if isinstance(obj, list):
+            for it in obj:
+                if isinstance(it, dict):
+                    label = (
+                        self._as_str(it.get("label"))
+                        or self._as_str(it.get("type"))
+                        or self._as_str(it.get("name"))
+                    ).strip()
+                    val = (
+                        self._as_str(it.get("form"))
+                        or self._as_str(it.get("value"))
+                        or self._as_str(it.get("text"))
+                    ).strip()
+                    val = self._norm_form_text(val)
+                    if val:
+                        pairs.append((label, val))
+                else:
+                    val = self._norm_form_text(it)
+                    if val:
+                        pairs.append(("", val))
+            return pairs
+
+        val = self._norm_form_text(obj)
+        return [("", val)] if val else []
+
+    def _labelize_conj(self, label: str) -> str:
+        l = (label or "").strip().lower()
+        mapping = {
+            "3sg": "3인칭 단수",
+            "3rd": "3인칭 단수",
+            "third_person_singular": "3인칭 단수",
+            "present_3sg": "3인칭 단수",
+            "past": "과거",
+            "pp": "과거분사",
+            "past_participle": "과거분사",
+            "present_participle": "현재분사(-ing)",
+            "ing": "현재분사(-ing)",
+            "plural": "복수형",
+            "comparative": "비교급",
+            "superlative": "최상급",
+        }
+        return mapping.get(l, label)
+
+    def _ordered_conj_pairs(self, pairs: List[Tuple[str, str]]) -> List[Tuple[str, str]]:
+        priority = [
+            "3인칭 단수",
+            "과거",
+            "과거분사",
+            "현재분사(-ing)",
+            "복수형",
+            "비교급",
+            "최상급",
+        ]
+
+        normed = [(self._labelize_conj(k), v) for k, v in pairs]
+
+        ordered: List[Tuple[str, str]] = []
+        used = set()
+
+        for p in priority:
+            for k, v in normed:
+                if k == p and (k, v) not in used:
+                    ordered.append((k, v))
+                    used.add((k, v))
+
+        for k, v in normed:
+            if (k, v) not in used:
+                ordered.append((k, v))
+                used.add((k, v))
+
+        return ordered
+
+    def format_conjugation(self, join_with: str = "<br>") -> str:
+        """
+        변화형/활용형 출력.
+        - 우선순위: self._raw(conjugations/inflections) -> entries 내부(conjugations/inflections)
+        - part_of_speech에서 추출하는 fallback은 사용하지 않음.
+        """
+        self._ensure_ready()
+
+        candidates: List[Any] = []
+
+        # top-level
+        for key in ("conjugations", "inflections", "conjugation", "inflection"):
+            if key in self._raw:
+                candidates.append(self._raw.get(key))
+
+        # entries 내부
+        entries = self._as_list(self._raw.get("entries"))
+        for e in entries:
+            if not isinstance(e, dict):
+                continue
+            for key in ("conjugations", "inflections", "conjugation", "inflection"):
+                if key in e:
+                    candidates.append(e.get(key))
+
+        pairs: List[Tuple[str, str]] = []
+        for c in candidates:
+            pairs.extend(self._iter_conj_pairs_from_obj(c))
+
+        if not pairs:
+            return ""  # 변화형 데이터가 없으면 빈 문자열
+
+        pairs = self._ordered_conj_pairs(pairs)
+
+        lines: List[str] = []
+        for k, v in pairs:
+            if k:
+                lines.append(f"{html.escape(k)}: {html.escape(v)}")
+            else:
+                lines.append(html.escape(v))
+
+        return join_with.join([x for x in lines if x])
+
+    def _format_node(
+        self,
+        obj: Any,
+        *,
+        parent_key: Optional[str] = None,
+        join_with: str,
+        item_wrap_class: Optional[str],
+        ol_keys: Set[str],
+    ) -> str:
+        SKIP_KEYS = {"sense_no"}
+
+        TAG_OVERRIDES: Dict[str, str] = {
+            "part_of_speech": "p",
+            "part_speech": "div",
+            "examples": "div",
+        }
+
+        ITEM_CLASS_OVERRIDES: Dict[str, str] = {
+            "entries": "entry_item",        # ✅ entries item class
+            "senses": "sense_item",
+            "examples": "example_item",
+            "part_speech": "part_speech_item",
+        }
+
+        ITEM_TAG_OVERRIDES: Dict[str, str] = {
+            "entries": "div",               # ✅ entries item tag
+            "examples": "div",              # 예문 item은 div
+            # part_speech_item은 span 유지(배경색 처리 용이)
+        }
+
+        # dict
+        if isinstance(obj, dict):
+            parts: List[str] = []
+            for k, v in obj.items():
+                key_raw = str(k)
+
+                # ✅ sense_no 제거
+                if key_raw in SKIP_KEYS:
+                    continue
+
+                cls = html.escape(self._safe_class(key_raw), quote=True)
+
+                # part_of_speech 영문 → 한글 정규화
+                if key_raw == "part_of_speech" and isinstance(v, str):
+                    v = self._norm_pos_text(v)
+
+                # senses는 ol 구조
+                if key_raw in ol_keys and isinstance(v, list):
+                    li_cls_raw = ITEM_CLASS_OVERRIDES.get(key_raw, f"{key_raw}_item")
+                    li_cls = html.escape(self._safe_class(li_cls_raw), quote=True)
+
+                    lis: List[str] = []
+                    for x in v:
+                        inner = self._format_node(
+                            x,
+                            parent_key=key_raw,
+                            join_with=join_with,
+                            item_wrap_class=item_wrap_class,
+                            ol_keys=ol_keys,
+                        )
+                        if inner.strip():
+                            lis.append(f'<li class="{li_cls}">{inner}</li>')
+
+                    parts.append(f'<ol class="{cls}">' + "".join(lis) + "</ol>")
+                    continue
+
+                inner = self._format_node(
+                    v,
+                    parent_key=key_raw,
+                    join_with=join_with,
+                    item_wrap_class=item_wrap_class,
+                    ol_keys=ol_keys,
+                )
+
+                tag = TAG_OVERRIDES.get(key_raw, "span")
+                parts.append(f'<{tag} class="{cls}">{inner}</{tag}>')
+
+            return join_with.join([p for p in parts if p])
+
+        # list
+        if isinstance(obj, list):
+            items: List[str] = []
+
+            # ✅ 부모 key 기반 item class/tag
+            if parent_key:
+                item_cls_raw = ITEM_CLASS_OVERRIDES.get(parent_key, f"{parent_key}_item")
+                item_tag = ITEM_TAG_OVERRIDES.get(parent_key, "span")
+            else:
+                item_cls_raw = item_wrap_class or "__item"
+                item_tag = "span"
+
+            item_cls = html.escape(self._safe_class(item_cls_raw), quote=True)
+
+            for x in obj:
+                inner = self._format_node(
+                    x,
+                    parent_key=parent_key,
+                    join_with=join_with,
+                    item_wrap_class=item_wrap_class,
+                    ol_keys=ol_keys,
+                )
+                if not inner.strip():
+                    continue
+
+                items.append(f'<{item_tag} class="{item_cls}">{inner}</{item_tag}>')
+
+            return join_with.join(items)
+
+        # scalar
+        s = "" if obj is None else str(obj)
+        return html.escape(s)
+
     def format_meaning(
         self,
         *,
-        join_with: str = "<br>",
+        join_with: str = "",
         item_wrap_class: Optional[str] = "__item",
         ol_keys: Set[str] = {"senses"},
-        ol_item_class: str = "sense",
     ) -> str:
-        """
-        meaning은 보통 entries 아래를 렌더링하는 게 자연스러우니,
-        기본은 {"entries": self._raw.get("entries", [])} 를 루트로 잡음.
-        """
-        entries = self._raw.get("entries", [])
+        self._ensure_ready()
+        entries = self._as_list(self._raw.get("entries"))
+
+        # ✅ entries 컨테이너는 제거하고, entries 리스트만 렌더링
         return self._format_node(
-            {"entries": entries},
+            entries,
+            parent_key="entries",   # ✅ entries item을 entry_item(div)로 만들기 위해 지정
             join_with=join_with,
             item_wrap_class=item_wrap_class,
             ol_keys=ol_keys,
-            ol_item_class=ol_item_class,
         )
+
 
     def format_tag(self) -> str:
         tags: Set[str] = set()
@@ -275,3 +444,5 @@ class Formatter:
 
         # Anki 태그는 공백으로 구분되는 1줄 문자열
         return " ".join(sorted(tags))
+    
+    

@@ -1,16 +1,13 @@
 from anki_vocab.crawler import Crawler
 from anki_vocab.parser import Parser
 from anki_vocab.formatter import Formatter
-from anki_vocab.word_entry import WordEntry
+from anki_vocab.file_handler import FileHandler
 
-import json
-import os
-from pathlib import Path
-
+import json, os
 
 # 1) 케이스별 단어 묶음
 TEST_CASES = {
-    "homograph_pron": ["lead", "wind", "tear", "bow", "bass", "close"],
+    "homograph_pron": ["lead", "wind", "tear", "bow", "bass", "close", "do"],
     "polysemy_basics": ["make", "work", "water", "bark", "bat", "row", "pace"],
     "stress_shift": ["record", "permit", "object", "present", "conduct", "produce"],
     "inflection": ["went", "better", "children", "mice"],
@@ -23,22 +20,33 @@ def test():
     parser = Parser()
     formatter = Formatter()
 
-    for case_name, words in TEST_CASES.items():
-        for word in words:
-            print(f"word: {word}")
-            htmls = crawler.search_from_naver(word)
+    with FileHandler("output/anki_notes.tsv") as fh:
+        for idx, words in enumerate(TEST_CASES.values()):
+            print(f"{idx+1}번째 묶음")
+            for i, word in enumerate(words):
+                print(f"{i+1}/{len(words)}, {word}")
+                htmls = crawler.search_from_naver(word)
+                is_homonym = len(htmls) >= 2
 
-            for html in htmls:
-                parser.set_html(html)
-                data = parser.parse_to_json(word)
-                # print(json.dumps(data, ensure_ascii=False, indent=3))
-                
-                formatter.set_data(data)
-                print(formatter.format_pronunciation())
-                print(formatter.pretty_html(formatter.format_meaning()))
-                print(formatter.format_tag())
+                for idx, html in enumerate(htmls, start=1):
+                    parser.set_html(html)
+                    data = parser.parse_to_json(word)
+                    print(json.dumps(data, ensure_ascii=False, indent=2))
+                    formatter.set_data(data)
 
-                input("waiting...")
+                    pronunciation = formatter.format_pronunciation(join_with="\n")
+                    conjugation = formatter.format_conjugation(join_with="\n")
+                    meaning = formatter.pretty_html(formatter.format_meaning(join_with="\n"))
+                    tags = formatter.format_tag()
+
+                    fh.write_note(
+                        word=word,
+                        pronunciation=pronunciation,
+                        conjugation=conjugation,
+                        meaning=meaning,
+                        tags=tags,
+                        homonym_no=(idx if is_homonym else None),
+                    )
 
 
 if __name__ == "__main__":
