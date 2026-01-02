@@ -4,6 +4,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Optional, Sequence, Union, List
+import re
 
 
 TagsType = Union[str, Sequence[str], None]
@@ -27,6 +28,8 @@ class FileHandlerConfig:
     # 동음이의어 구분(윗첨자 숫자)
     disambiguate_word: bool = True
 
+    # HTML 태그 사이 줄바꿈 제거(기본 ON)
+    remove_newlines_between_html_tags: bool = True
 
 class FileHandler:
     """
@@ -40,6 +43,9 @@ class FileHandler:
         "0": "⁰", "1": "¹", "2": "²", "3": "³", "4": "⁴",
         "5": "⁵", "6": "⁶", "7": "⁷", "8": "⁸", "9": "⁹",
     }
+
+    # 태그-태그 사이 공백/줄바꿈 제거용
+    _BETWEEN_TAGS_RE = re.compile(r">\s*\n+\s*<")
 
     def __init__(
         self,
@@ -74,11 +80,33 @@ class FileHandler:
     def __exit__(self, exc_type, exc, tb) -> None:
         self.close()
 
+    def _looks_like_html(self, s: str) -> bool:
+        # 매우 단순 휴리스틱: pretty_html 결과라면 충분
+        return "<" in s and ">" in s
+    
     def _sanitize_field(self, s: str) -> str:
         s = (s or "")
         s = str(s).replace("\t", self.config.tab_replacement)
+
+        # 개행 정규화
         s = s.replace("\r\n", "\n").replace("\r", "\n")
+
+        # 핵심: HTML 태그 사이의 개행은 제거(= <br>로 바뀌지 않도록)
+        if (
+            self.config.remove_newlines_between_html_tags
+            and "\n" in s
+            and self._looks_like_html(s)
+        ):
+            # </div>\n  <div> 같은 패턴을 ></div><div>로 축약
+            while True:
+                new_s = self._BETWEEN_TAGS_RE.sub("><", s)
+                if new_s == s:
+                    break
+                s = new_s
+
+        # 남은 개행만 <br>로 치환(텍스트 노드 내부 개행 용도)
         s = s.replace("\n", self.config.newline_replacement)
+
         return s.strip() if self.config.strip_fields else s
 
     def _normalize_tags(self, tags: TagsType) -> str:

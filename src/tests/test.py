@@ -1,8 +1,7 @@
 from anki_vocab.crawler import Crawler
 from anki_vocab.parser import Parser
 from anki_vocab.formatter import Formatter
-from anki_vocab.file_handler import FileHandler
-
+from anki_vocab.file_handler import FileHandler, FileHandlerConfig
 import json, os
 
 # 1) 케이스별 단어 묶음
@@ -31,13 +30,19 @@ def test():
                 for idx, html in enumerate(htmls, start=1):
                     parser.set_html(html)
                     data = parser.parse_to_json(word)
-                    print(json.dumps(data, ensure_ascii=False, indent=2))
+                    # print(json.dumps(data, ensure_ascii=False, indent=2))
                     formatter.set_data(data)
 
-                    pronunciation = formatter.format_pronunciation(join_with="\n")
-                    conjugation = formatter.format_conjugation(join_with="\n")
-                    meaning = formatter.pretty_html(formatter.format_meaning(join_with="\n"))
+                    pronunciation = formatter.format_pronunciation(join_with="")
+                    print(pronunciation)
+                    conjugation = formatter.format_conjugation(join_with="")
+                    print(conjugation)
+                    meaning = formatter.format_meaning(join_with="")
+                    print(repr(meaning))  # 여기에 \n 이 없으면, prettify가 만든 개행임
+                    print(formatter.pretty_html(meaning))  # 여기 출력은 prettify 때문에 줄바꿈이 생김
+
                     tags = formatter.format_tag()
+                    print(tags)
 
                     fh.write_note(
                         word=word,
