@@ -411,19 +411,17 @@ class Parser:
         if isinstance(cont, Tag):
             mean_addition = self._text(cont.select_one("span.mean_addition"))      
 
-        countability = self._first_text_by_selectors(li, [".label_count", ".count", ".word_count"])
         references = self.parse_references(li)
         antonyms = self.parse_antonyms(li)
 
         sense: dict[str, Any] = {
-            "sense_no": sense_no,
-            "countability": countability or None,
-            "part_speech": part_speech or None,
+            "sense_no": sense_no, # 단어 번호
+            "part_speech": part_speech or None, 
             "mean_addition": mean_addition or None,
-            "definition_ko": definition_ko,
-            "examples": self.parse_examples(li),
-            "references": references,
-            "related_words": self.parse_related_words(li),
+            "definition_ko": definition_ko, # 한글 뜻
+            "examples": self.parse_examples(li), # 예문
+            "references": references, # 참고: 문형, Help
+            "related_words": self.parse_related_words(li), # 참고어: 참고어, 유의어, 반의어
             "antonyms": antonyms,
         }
 
@@ -436,8 +434,6 @@ class Parser:
             sense.pop("references")
         if not sense["antonyms"]:
             sense.pop("antonyms")
-        if sense.get("countability") is None:
-            sense.pop("countability", None)
         if sense.get("part_speech") is None:
             sense.pop("part_speech", None)
         if sense.get("mean_addition") is None:
