@@ -554,3 +554,22 @@ class Parser:
             },
         }
         
+
+if __name__ == "__main__":
+    from anki_vocab.crawler import Crawler
+    import json
+
+    c = Crawler()
+    p = Parser()
+
+    with open("src\\anki_vocab\\test_words.txt", "rt") as f:
+        words = f.readlines()
+
+        for word in words:
+            entries = c.search_from_naver(word)
+
+            for entry in entries:
+                p.set_html(entry)
+                res = json.dumps(p.parse_to_json(word), ensure_ascii=False, indent=2)
+                
+                print(res)
