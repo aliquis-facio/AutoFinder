@@ -556,20 +556,15 @@ class Parser:
         
 
 if __name__ == "__main__":
-    from anki_vocab.crawler import Crawler
+    from anki_vocab.dict_crawler import DictionaryRouter, NaverDictProvider
     import json
 
-    c = Crawler()
+    router = DictionaryRouter([NaverDictProvider()])
     p = Parser()
 
-    with open("src\\anki_vocab\\test_words.txt", "rt") as f:
-        words = f.readlines()
-
-        for word in words:
-            entries = c.search_from_naver(word)
-
-            for entry in entries:
-                p.set_html(entry)
-                res = json.dumps(p.parse_to_json(word), ensure_ascii=False, indent=2)
-                
-                print(res)
+    docs = router.search("book", strategy="first_non_empty")
+    for doc in docs:
+        p.set_html(doc.html)
+        res = p.parse_to_json(word=doc.query)  # 또는 word 인자를 doc.query로
+        # meta에 doc 정보도 넣고 싶으면 parse_to_json에 doc 받게 바꾸는 게 깔끔
+        print(json.dumps(res, ensure_ascii=False, indent=2))
