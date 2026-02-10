@@ -1,4 +1,3 @@
-# examples/parse_with_router.py
 from __future__ import annotations
 
 import json
