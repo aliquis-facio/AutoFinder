@@ -123,16 +123,3 @@ class TsvWriter:
             [final_word, pronunciation, conjugation, meaning, tag_str],
             field_names=["word", "pronunciation", "conjugation", "meaning", "tags"],
         )
-
-if __name__ == "__main__":
-
-    with TsvWriter("output/anki_notes.tsv") as w:
-        # formatter.set_data(data) 이후
-        w.write_note(
-            word=word,
-            pronunciation=formatter.format_pronunciation(),
-            conjugation=formatter.format_conjugation(),
-            meaning=formatter.format_meaning(),   # pretty_html()는 보통 \n 포함 → 검증에서 터질 수 있음
-            tags=formatter.format_tag(),
-            homonym_no=(idx if is_homonym else None),
-        )
