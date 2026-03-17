@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from bs4 import BeautifulSoup
-from typing import Any, Dict, List, Optional, Set, Tuple
+from typing import Any, Dict, List, Mapping, Set, Tuple
 import html, re
 
 from .html_renderer import HtmlRenderer
@@ -64,8 +64,8 @@ class Formatter:
     # -------------------------
     # setter / guard
     # -------------------------
-    def set_data(self, data: Dict[str, Any]) -> None:
-        self._raw = data or {}
+    def set_data(self, data: Mapping[str, Any]) -> None:
+        self._raw = dict(data)
         self.word = str(self._raw.get("word", "") or "").strip()
         if not self.word:
             raise ValueError("Formatter: input JSON에 'word'가 비어 있습니다.")
